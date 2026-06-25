@@ -4,298 +4,157 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSS Reader</title>
-<!-- Firebase SDKs (compat / UMD — no build step needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
-/* ── RESET / BASE ─────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f0; color: #1a1a1a; }
 a { color: #3b7dd8; }
-
-/* ── HELPERS ─────────────────────────────────────── */
 .hidden { display: none !important; }
 
-/* ── FULL-SCREEN WRAPPER (setup / sign-in) ────────── */
-.full-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #eef1f7;
-  padding: 24px;
-}
-.center-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 36px 32px;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-}
+/* ── FULL-SCREEN (setup / sign-in) ── */
+.full-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #eef1f7; padding: 24px; }
+.center-card { background: #fff; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
 .center-card h1 { font-size: 22px; margin-bottom: 6px; }
 .center-card .subtitle { font-size: 13px; color: #777; margin-bottom: 24px; }
 
-/* ── FORM ────────────────────────────────────────── */
-.field { margin-bottom: 16px; }
+/* ── FORM ── */
+.field { margin-bottom: 14px; }
 .field label { display: block; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-.field input, .field textarea, .field select {
-  width: 100%; padding: 9px 11px;
-  border: 1px solid #ddd; border-radius: 6px;
-  font-size: 13px; font-family: inherit; background: #fafafa;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.field input:focus, .field textarea:focus, .field select:focus {
-  outline: none; border-color: #3b7dd8; background: #fff;
-  box-shadow: 0 0 0 3px rgba(59,125,216,0.12);
-}
-.field textarea { min-height: 72px; resize: vertical; }
-.field .hint { font-size: 11px; color: #999; margin-top: 5px; line-height: 1.5; }
+.field input, .field textarea, .field select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: #3b7dd8; background: #fff; box-shadow: 0 0 0 3px rgba(59,125,216,0.1); }
+.field textarea { min-height: 70px; resize: vertical; }
+.field .hint { font-size: 11px; color: #999; margin-top: 4px; line-height: 1.5; }
 
-/* ── BUTTONS ─────────────────────────────────────── */
-.btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 6px;
-  border: 1px solid #ddd; background: #fff;
-  font-size: 13px; font-family: inherit; font-weight: 500;
-  cursor: pointer; white-space: nowrap;
-  transition: background 0.12s, box-shadow 0.12s;
-}
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 6px; border: 1px solid #ddd; background: #fff; font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
 .btn:hover:not(:disabled) { background: #f4f4f4; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn.primary { background: #3b7dd8; color: #fff; border-color: #3b7dd8; }
 .btn.primary:hover:not(:disabled) { background: #2d6bbf; }
-.btn.danger  { background: #e53935; color: #fff; border-color: #e53935; }
-.btn.google  { gap: 10px; padding: 10px 20px; font-size: 14px; }
-.btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.btn.google { padding: 10px 20px; font-size: 14px; gap: 10px; }
+.btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 
-/* ── SETUP SCREEN ────────────────────────────────── */
-#setup-instructions {
-  margin-top: 20px;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  overflow: hidden;
-}
-#setup-instructions summary {
-  padding: 10px 14px;
-  font-size: 12px; font-weight: 600; color: #555;
-  cursor: pointer;
-  background: #f9f9f9;
-  user-select: none;
-}
+/* ── SETUP SCREEN ── */
+#setup-instructions { margin-top: 18px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
+#setup-instructions summary { padding: 10px 14px; font-size: 12px; font-weight: 600; color: #555; cursor: pointer; background: #f9f9f9; user-select: none; }
 #setup-instructions summary:hover { background: #f0f0f0; }
-.instructions-body { padding: 14px 16px; }
-.instructions-body ol { margin: 0; padding-left: 18px; }
-.instructions-body li { font-size: 12px; color: #555; margin-bottom: 6px; line-height: 1.5; }
-.instructions-body code {
-  background: #f0f0f0; border-radius: 3px;
-  padding: 1px 5px; font-size: 11px; font-family: monospace;
-}
-.rules-block {
-  background: #f5f5f5; border-radius: 5px;
-  padding: 10px 12px; margin-top: 10px;
-  font-size: 11px; font-family: monospace;
-  white-space: pre; overflow-x: auto;
-  border: 1px solid #e0e0e0;
-}
-
-/* ── SIGN-IN SCREEN ──────────────────────────────── */
-.signin-subtitle { margin-bottom: 28px; }
+.inst-body { padding: 14px 16px; }
+.inst-body ol { margin: 0; padding-left: 18px; }
+.inst-body li { font-size: 12px; color: #555; margin-bottom: 6px; line-height: 1.5; }
+.inst-body code { background: #f0f0f0; border-radius: 3px; padding: 1px 5px; font-size: 11px; font-family: monospace; }
+.rules-block { background: #f5f5f5; border-radius: 5px; padding: 10px 12px; margin-top: 10px; font-size: 11px; font-family: monospace; white-space: pre; overflow-x: auto; border: 1px solid #e0e0e0; }
 .google-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-/* ── MAIN APP LAYOUT ─────────────────────────────── */
-#app {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
+/* ── MAIN APP ── */
+#app { display: flex; height: 100vh; overflow: hidden; }
 
-/* ── SIDEBAR ─────────────────────────────────────── */
-#sidebar {
-  width: 240px;
-  background: #1a1a2e;
-  color: #aaa;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-#sidebar-header {
-  padding: 13px 14px;
-  background: #12122a;
-  border-bottom: 1px solid #2a2a40;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* ── SIDEBAR ── */
+#sidebar { width: 240px; background: #1a1a2e; color: #aaa; display: flex; flex-direction: column; flex-shrink: 0; }
+#sidebar-header { padding: 12px 14px; background: #12122a; border-bottom: 1px solid #2a2a40; display: flex; align-items: center; gap: 8px; }
 #sidebar-header span { font-size: 15px; font-weight: 700; color: #fff; flex: 1; }
-#sidebar-header .user-btn {
-  background: none; border: none; color: #777; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 3px;
-}
+#sidebar-header .user-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 3px; }
 #sidebar-header .user-btn:hover { color: #ddd; background: rgba(255,255,255,0.08); }
-
-#sidebar-actions { padding: 8px; display: flex; gap: 5px; border-bottom: 1px solid #22223a; }
-.btn-side {
-  flex: 1; padding: 6px; font-size: 12px; font-weight: 600;
-  border: none; border-radius: 5px; cursor: pointer; font-family: inherit;
-}
+#user-menu { padding: 10px 12px; background: #12122a; border-bottom: 1px solid #2a2a40; font-size: 12px; color: #777; }
+#user-email { margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sidebar-actions { padding: 7px 8px; display: flex; gap: 5px; border-bottom: 1px solid #22223a; }
+.btn-side { flex: 1; padding: 6px; font-size: 12px; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; font-family: inherit; }
 .btn-side.add { background: #3b7dd8; color: #fff; }
 .btn-side.add:hover { background: #2d6bbf; }
 .btn-side.cfg { background: #25253f; color: #aaa; }
 .btn-side.cfg:hover { background: #30305a; color: #fff; }
 
 #feed-list { list-style: none; overflow-y: auto; flex: 1; padding: 4px 0; }
-.feed-item {
-  padding: 7px 12px;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 7px;
-  font-size: 13px;
-  border-left: 3px solid transparent;
-  transition: background 0.1s;
-}
+
+/* "All Items" and bare feeds */
+.feed-item { padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; border-left: 3px solid transparent; transition: background 0.1s; }
 .feed-item:hover { background: rgba(255,255,255,0.05); }
 .feed-item.active { background: rgba(59,125,216,0.18); border-left-color: #3b7dd8; color: #fff; }
-.feed-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.unread-badge {
-  background: #3b7dd8; color: #fff;
-  border-radius: 10px; padding: 1px 6px;
-  font-size: 11px; min-width: 20px; text-align: center; flex-shrink: 0;
-}
+.feed-item .feed-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Folder headers */
+.folder-header { padding: 5px 10px 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid transparent; transition: background 0.1s; user-select: none; }
+.folder-header:hover { background: rgba(255,255,255,0.04); }
+.folder-header.active { background: rgba(59,125,216,0.15); border-left-color: #3b7dd8; color: #bbb; }
+.folder-arrow { font-size: 10px; transition: transform 0.18s; flex-shrink: 0; color: #555; }
+.folder-arrow.open { transform: rotate(90deg); }
+.folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-btns { display: none; gap: 2px; }
+.folder-header:hover .folder-btns { display: flex; }
+.folder-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
+.folder-btns button:hover { color: #ddd; background: rgba(255,255,255,0.1); }
+
+/* Nested feeds inside folder */
+.folder-feeds { overflow: hidden; }
+.folder-feed-item { padding: 5px 12px 5px 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; border-left: 3px solid transparent; transition: background 0.1s; color: #999; }
+.folder-feed-item:hover { background: rgba(255,255,255,0.05); color: #bbb; }
+.folder-feed-item.active { background: rgba(59,125,216,0.15); border-left-color: #3b7dd8; color: #fff; }
+.folder-feed-item .feed-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.unread-badge { background: #3b7dd8; color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 11px; min-width: 18px; text-align: center; flex-shrink: 0; }
 .feed-btns { display: none; gap: 2px; }
-.feed-item:hover .feed-btns { display: flex; }
-.feed-btns button {
-  background: none; border: none; color: #555; cursor: pointer;
-  font-size: 13px; padding: 2px; border-radius: 3px; line-height: 1;
-}
+.feed-item:hover .feed-btns, .folder-feed-item:hover .feed-btns { display: flex; }
+.feed-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
 .feed-btns button:hover { color: #ddd; background: rgba(255,255,255,0.1); }
 
-/* ── MAIN CONTENT ────────────────────────────────── */
+/* ── MAIN ── */
 #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-
-#toolbar {
-  background: #fff;
-  padding: 8px 16px;
-  display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid #e4e4e4;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  flex-shrink: 0;
-}
+#toolbar { background: #fff; padding: 8px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e4e4e4; box-shadow: 0 1px 4px rgba(0,0,0,0.06); flex-shrink: 0; }
 #current-feed-name { font-weight: 700; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chk-label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
-.chk-label input { cursor: pointer; }
-
-#filter-status {
-  font-size: 12px; color: #7a5c00;
-  background: #fffde7; border-bottom: 1px solid #fff176;
-  padding: 5px 16px;
-  flex-shrink: 0;
-}
-
+#filter-status { font-size: 12px; color: #7a5c00; background: #fffde7; border-bottom: 1px solid #fff176; padding: 5px 16px; flex-shrink: 0; }
 #article-list { flex: 1; overflow-y: auto; }
 
-/* ── ARTICLE ITEMS ───────────────────────────────── */
-.article-item {
-  background: #fff;
-  border-bottom: 1px solid #ebebeb;
-  padding: 11px 16px;
-  cursor: pointer;
-  border-left: 3px solid transparent;
-  transition: background 0.1s;
-}
+/* ── ARTICLES ── */
+.article-item { background: #fff; border-bottom: 1px solid #ebebeb; padding: 11px 16px; cursor: pointer; border-left: 3px solid transparent; transition: background 0.1s; }
 .article-item:hover { background: #f9f9fb; }
 .article-item.unread .article-title { font-weight: 700; }
 .article-item.expanded { background: #f4f8ff; border-left-color: #3b7dd8; }
 .article-item.ai-filtered { border-left-color: #e53935; }
 .article-item.ai-filtered .article-title { color: #999; }
-
 .article-title { font-size: 14px; color: #1a1a1a; line-height: 1.45; }
-.article-meta {
-  margin-top: 4px; font-size: 11px; color: #999;
-  display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
-}
+.article-meta { margin-top: 4px; font-size: 11px; color: #999; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
 .tag { padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; }
-.tag-source   { background: #e8f0fe; color: #2d5fb5; }
+.tag-source { background: #e8f0fe; color: #2d5fb5; }
 .tag-filtered { background: #fce4e4; color: #b71c1c; cursor: help; }
-.tag-pending  { background: #fff8e1; color: #e65100; }
-
+.tag-pending { background: #fff8e1; color: #e65100; }
 .article-body { display: none; margin-top: 10px; }
 .article-item.expanded .article-body { display: block; }
-.article-body-inner {
-  font-size: 13px; line-height: 1.7; color: #333;
-  max-height: 420px; overflow-y: auto;
-  padding: 12px; background: #f9f9f9;
-  border: 1px solid #e8e8e8; border-radius: 6px;
-}
+.article-body-inner { font-size: 13px; line-height: 1.7; color: #333; max-height: 420px; overflow-y: auto; padding: 12px; background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 6px; }
 .article-body-inner img { max-width: 100%; height: auto; border-radius: 4px; display: block; margin: 8px 0; }
 .article-body-inner p { margin-bottom: 0.75em; }
 .article-link { display: inline-block; margin-top: 9px; font-size: 12px; font-weight: 600; text-decoration: none; }
 .article-link:hover { text-decoration: underline; }
+.scroll-sentinel { padding: 24px; text-align: center; font-size: 13px; color: #bbb; }
+.list-end { padding: 20px; text-align: center; font-size: 12px; color: #ccc; border-top: 1px solid #f0f0f0; }
 
-.scroll-sentinel {
-  padding: 24px;
-  text-align: center;
-  font-size: 13px; color: #bbb;
-}
-.list-end {
-  padding: 20px;
-  text-align: center;
-  font-size: 12px; color: #ccc;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* ── MODALS ──────────────────────────────────────── */
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45); z-index: 200;
-  align-items: center; justify-content: center;
-}
+/* ── MODALS ── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
 .overlay.open { display: flex; }
-.modal {
-  background: #fff; border-radius: 10px; padding: 24px;
-  width: 480px; max-width: 95vw; max-height: 88vh; overflow-y: auto;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
-}
+.modal { background: #fff; border-radius: 10px; padding: 24px; width: 480px; max-width: 95vw; max-height: 88vh; overflow-y: auto; box-shadow: 0 12px 48px rgba(0,0,0,0.22); }
 .modal h2 { font-size: 15px; font-weight: 700; margin-bottom: 18px; }
 
-/* ── TOAST ───────────────────────────────────────── */
-#toast {
-  position: fixed; bottom: 20px; right: 20px;
-  background: #222; color: #fff;
-  padding: 9px 16px; border-radius: 7px;
-  font-size: 13px; font-weight: 500;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  z-index: 9999;
-}
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 20px; right: 20px; background: #222; color: #fff; padding: 9px 16px; border-radius: 7px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 9999; }
 
-/* ── EMPTY STATE ─────────────────────────────────── */
-.empty-state {
-  text-align: center; padding: 80px 20px; color: #aaa;
-}
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 80px 20px; color: #aaa; }
 .empty-state h3 { font-size: 17px; color: #777; margin-bottom: 6px; }
-.empty-state p  { font-size: 13px; margin-bottom: 18px; }
+.empty-state p { font-size: 13px; margin-bottom: 18px; }
 
-/* ── SPINNER ─────────────────────────────────────── */
-.spin {
-  display: inline-block;
-  width: 14px; height: 14px;
-  border: 2px solid #e0e0e0; border-top-color: #3b7dd8;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  vertical-align: middle;
-}
+/* ── SPINNER ── */
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #e0e0e0; border-top-color: #3b7dd8; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 1 — FIREBASE SETUP
-════════════════════════════════════════════════════ -->
+<!-- ══ SETUP SCREEN ══ -->
 <div id="screen-setup" class="full-screen">
   <div class="center-card">
     <h1>📰 RSS Reader</h1>
     <p class="subtitle">Connect Firebase to sync feeds, read state, and filter decisions across all your devices.</p>
-
     <div class="field">
       <label>Firebase Config (JSON)</label>
       <textarea id="fb-config-input" rows="7" placeholder='{
@@ -307,22 +166,18 @@ a { color: #3b7dd8; }
   "messagingSenderId": "...",
   "appId": "..."
 }'></textarea>
-      <div class="hint">
-        Paste the config object from Firebase console → Project settings → Your apps → Web app.
-        Make sure it includes <code>databaseURL</code> (requires Realtime Database to be enabled).
-      </div>
+      <div class="hint">Paste the config object from Firebase console → Project settings → Your apps. Make sure it includes <code>databaseURL</code>.</div>
     </div>
     <button class="btn primary" style="width:100%" onclick="connectFirebase()">Connect →</button>
-
     <details id="setup-instructions">
       <summary>Step-by-step setup instructions</summary>
-      <div class="instructions-body">
+      <div class="inst-body">
         <ol>
-          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Add project</strong> (disable Google Analytics if you don't need it).</li>
-          <li><strong>Add a Web App</strong>: click the <code>&lt;/&gt;</code> icon → give it a nickname → <strong>Register app</strong>. Copy the <code>firebaseConfig</code> object that appears.</li>
-          <li><strong>Enable Authentication</strong>: Build → Authentication → Get started → Sign-in method → Google → Enable → Save.</li>
-          <li><strong>Enable Realtime Database</strong>: Build → Realtime Database → Create database → choose a region → <em>Start in test mode</em> (we'll tighten rules in step 5).</li>
-          <li><strong>Set security rules</strong>: in the Realtime Database console, click the <em>Rules</em> tab and paste:
+          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Add project</strong>.</li>
+          <li><strong>Add a Web App</strong>: click the <code>&lt;/&gt;</code> icon → register → copy the config object.</li>
+          <li><strong>Enable Authentication</strong>: Build → Authentication → Sign-in method → Google → Enable → Save.</li>
+          <li><strong>Enable Realtime Database</strong>: Build → Realtime Database → Create database → Start in test mode.</li>
+          <li><strong>Set security rules</strong> (Rules tab):
             <div class="rules-block">{
   "rules": {
     "users": {
@@ -334,58 +189,42 @@ a { color: #3b7dd8; }
   }
 }</div>
           </li>
-          <li>Return here, paste the config, and click <strong>Connect</strong>.</li>
+          <li>Return here, paste the config, click <strong>Connect</strong>.</li>
         </ol>
       </div>
     </details>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 2 — GOOGLE SIGN-IN
-════════════════════════════════════════════════════ -->
+<!-- ══ SIGN-IN SCREEN ══ -->
 <div id="screen-signin" class="full-screen hidden">
-  <div class="center-card" style="text-align:center; max-width:360px">
+  <div class="center-card" style="text-align:center;max-width:360px">
     <h1 style="margin-bottom:8px">📰 RSS Reader</h1>
-    <p class="subtitle signin-subtitle">Sign in to sync your feeds across devices.</p>
-    <button class="btn primary google" onclick="signIn()" style="width:100%; justify-content:center">
-      <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
+    <p class="subtitle">Sign in to sync your feeds across devices.</p>
+    <button class="btn primary google" onclick="signIn()" style="width:100%;justify-content:center">
+      <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Sign in with Google
     </button>
-    <button class="btn" style="width:100%; margin-top:10px; justify-content:center" onclick="resetFirebase()">
-      ← Use a different Firebase project
-    </button>
+    <button class="btn" style="width:100%;margin-top:8px;justify-content:center" onclick="resetFirebase()">← Different Firebase project</button>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     SCREEN 3 — MAIN APP
-════════════════════════════════════════════════════ -->
+<!-- ══ MAIN APP ══ -->
 <div id="app" class="hidden">
-
-  <!-- Sidebar -->
   <div id="sidebar">
     <div id="sidebar-header">
       <span>📰 RSS Reader</span>
-      <button class="user-btn" id="user-menu-btn" onclick="toggleUserMenu()" title="Account">👤</button>
+      <button class="user-btn" onclick="toggleUserMenu()" title="Account">👤</button>
     </div>
-
-    <!-- User menu (hidden by default) -->
-    <div id="user-menu" style="display:none; padding:10px 12px; background:#12122a; border-bottom:1px solid #2a2a40; font-size:12px; color:#888">
-      <div id="user-email" style="margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
-      <button class="btn" style="font-size:11px; padding:4px 8px; background:#25253f; border-color:#35355a; color:#aaa" onclick="signOut()">Sign out</button>
+    <div id="user-menu" class="hidden">
+      <div id="user-email"></div>
+      <button class="btn" style="font-size:11px;padding:3px 8px;background:#25253f;border-color:#35355a;color:#aaa;margin-top:4px" onclick="signOut()">Sign out</button>
     </div>
-
     <div id="sidebar-actions">
-      <button class="btn-side add" onclick="openAddFeed()">+ Add Feed</button>
-      <button class="btn-side cfg" onclick="openSettings()">⚙ Settings</button>
+      <button class="btn-side add" onclick="openAddFeed()">+ Feed</button>
+      <button class="btn-side add" style="background:#2d5a3d" onclick="openAddFolder()">+ Folder</button>
+      <button class="btn-side cfg" onclick="openSettings()">⚙</button>
     </div>
-
     <ul id="feed-list">
       <li class="feed-item active" data-id="all" onclick="selectFeed('all')">
         <span class="feed-title">📋 All Items</span>
@@ -394,50 +233,46 @@ a { color: #3b7dd8; }
     </ul>
   </div>
 
-  <!-- Main content -->
   <div id="main">
     <div id="toolbar">
       <span id="current-feed-name">All Items</span>
-      <label class="chk-label">
-        <input type="checkbox" id="chk-show-filtered" onchange="renderArticles()"> Show filtered
-      </label>
-      <label class="chk-label">
-        <input type="checkbox" id="chk-hide-read" onchange="renderArticles()"> Hide read
-      </label>
+      <label class="chk-label"><input type="checkbox" id="chk-show-filtered" onchange="renderArticles()"> Show filtered</label>
+      <label class="chk-label"><input type="checkbox" id="chk-hide-read" onchange="renderArticles()"> Hide read</label>
       <button class="btn" id="btn-refresh" onclick="refreshFeeds()">↻ Refresh</button>
       <button class="btn primary" id="btn-filter" onclick="runAIFilter()">🤖 AI Filter</button>
     </div>
-
     <div id="filter-status" class="hidden"></div>
-
     <div id="article-list">
       <div class="empty-state">
         <h3>No feeds yet</h3>
-        <p>Add an RSS feed to get started.</p>
+        <p>Add a feed to get started.</p>
         <button class="btn primary" onclick="openAddFeed()">+ Add Feed</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MODAL — ADD / EDIT FEED
-════════════════════════════════════════════════════ -->
+<!-- ══ MODAL: ADD/EDIT FEED ══ -->
 <div class="overlay" id="overlay-feed">
   <div class="modal">
     <h2 id="feed-modal-title">Add Feed</h2>
     <div class="field">
       <label>Feed URL</label>
-      <input type="url" id="fi-url" placeholder="https://example.com/rss.xml"
-             onkeydown="if(event.key==='Enter') saveFeed()">
+      <input type="url" id="fi-url" placeholder="https://example.com/rss.xml" onkeydown="if(event.key==='Enter')saveFeed()">
     </div>
     <div class="field">
-      <label>Name <span style="font-weight:400;color:#bbb;text-transform:none">(optional — auto-detected)</span></label>
+      <label>Name <span style="font-weight:400;color:#bbb;text-transform:none">(optional)</span></label>
       <input type="text" id="fi-name" placeholder="e.g. Ars Technica">
     </div>
     <div class="field">
+      <label>Folder</label>
+      <select id="fi-folder">
+        <option value="">— No folder —</option>
+      </select>
+    </div>
+    <div class="field">
       <label>Feed-specific AI filter rule <span style="font-weight:400;color:#bbb;text-transform:none">(optional)</span></label>
-      <textarea id="fi-filter" placeholder="e.g. Only keep original reporting. Skip sponsored content and press releases."></textarea>
+      <textarea id="fi-filter" placeholder="e.g. Only keep original reporting. Skip sponsored content."></textarea>
       <div class="hint">Overrides the global filter rule for this feed only.</div>
     </div>
     <div class="btn-row">
@@ -447,29 +282,39 @@ a { color: #3b7dd8; }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MODAL — SETTINGS
-════════════════════════════════════════════════════ -->
+<!-- ══ MODAL: ADD/EDIT FOLDER ══ -->
+<div class="overlay" id="overlay-folder">
+  <div class="modal" style="max-width:360px">
+    <h2 id="folder-modal-title">New Folder</h2>
+    <div class="field">
+      <label>Folder Name</label>
+      <input type="text" id="folder-name-input" placeholder="e.g. Tech, News, Science…" onkeydown="if(event.key==='Enter')saveFolder()">
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeOverlay('overlay-folder')">Cancel</button>
+      <button class="btn primary" id="btn-save-folder" onclick="saveFolder()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: SETTINGS ══ -->
 <div class="overlay" id="overlay-settings">
   <div class="modal">
     <h2>⚙ Settings</h2>
     <div class="field">
       <label>Claude API Key</label>
       <input type="password" id="si-apikey" placeholder="sk-ant-...">
-      <div class="hint">
-        Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
-        Stored in your Firebase database (accessible only to you via Google auth).
-      </div>
+      <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored in Firebase, accessible only to you.</div>
     </div>
     <div class="field">
       <label>Global AI Filter Rule</label>
-      <textarea id="si-filter" placeholder="e.g. I only want articles about technology, science, and software engineering. Filter out sports, politics, celebrity gossip, and clickbait."></textarea>
-      <div class="hint">Applied to all feeds unless a feed has its own rule. Leave blank to disable AI filtering globally.</div>
+      <textarea id="si-filter" placeholder="e.g. Only show technology, science, and software articles. Filter out sports, politics, and celebrity news."></textarea>
+      <div class="hint">Applied to all feeds unless a feed has its own rule. Leave blank to disable.</div>
     </div>
     <div class="field">
       <label>When an article is filtered…</label>
       <select id="si-action">
-        <option value="mark">Show it with a red "filtered" indicator</option>
+        <option value="mark">Show with a red "filtered" indicator</option>
         <option value="hide">Hide it (toggle "Show filtered" to reveal)</option>
       </select>
     </div>
@@ -489,148 +334,109 @@ a { color: #3b7dd8; }
 
 <div id="toast" class="hidden"></div>
 
-<!-- ═══════════════════════════════════════════════════
-     JAVASCRIPT
-════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-// ── CONSTANTS ──────────────────────────────────────────────────
 const PAGE_SIZE = 20;
 
-// ── STATE ──────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────
 const S = {
   user: null,
-  feeds: [],
-  settings: {
-    apiKey: '',
-    globalFilter: '',
-    filterAction: 'mark',
-    model: 'claude-haiku-4-5-20251001'
-  },
-  articles: {},        // feedId → [article]
-  decisions: {},       // articleId → {keep, reason}
-  read: new Set(),     // articleIds
-  currentFeed: 'all',
+  folders: [],          // [{id, name}]
+  feeds: [],            // [{id, url, name, folderId, filterRule}]
+  settings: { apiKey: '', globalFilter: '', filterAction: 'mark', model: 'claude-haiku-4-5-20251001' },
+  articles: {},         // feedId → [article]
+  decisions: {},        // articleId → {keep, reason}
+  read: new Set(),
+  currentFeed: 'all',   // 'all' | feedId | 'folder:folderId'
   editingFeedId: null,
-
-  // Infinite scroll
+  editingFolderId: null,
   currentArticles: [],
   displayedCount: 0,
   scrollObserver: null
 };
 
-// Firebase refs (set after init)
+// Folder collapse state lives in localStorage (UI-only, no need to sync)
+const collapsed = new Set(JSON.parse(localStorage.getItem('rss.collapsed') || '[]'));
+function saveCollapsed() { localStorage.setItem('rss.collapsed', JSON.stringify([...collapsed])); }
+
 let auth, db;
 
-// ── FIREBASE SETUP ──────────────────────────────────────────────
+// ── FIREBASE INIT ─────────────────────────────────────────────
 function initFirebase(config) {
   try {
-    if (firebase.apps.length) firebase.apps.forEach(app => app.delete());
+    if (firebase.apps.length) firebase.apps.forEach(a => a.delete());
     firebase.initializeApp(config);
     auth = firebase.auth();
     db   = firebase.database();
-
     hide('screen-setup');
-
     auth.onAuthStateChanged(async user => {
       if (user) {
         S.user = user;
         document.getElementById('user-email').textContent = user.email || user.displayName || 'Signed in';
-        hide('screen-signin');
-        show('app');
+        hide('screen-signin'); show('app');
         await loadFromFirebase();
       } else {
         S.user = null;
-        hide('app');
-        show('screen-signin');
+        hide('app'); show('screen-signin');
       }
     });
-  } catch(e) {
-    toast('Firebase error: ' + e.message);
-  }
+  } catch(e) { toast('Firebase error: ' + e.message); }
 }
 
 function connectFirebase() {
-  const raw = document.getElementById('fb-config-input').value.trim();
   let cfg;
-  try { cfg = JSON.parse(raw); } catch(e) { toast('Invalid JSON — paste the full config object'); return; }
-  if (!cfg.apiKey || !cfg.authDomain || !cfg.databaseURL) {
-    toast('Config must include apiKey, authDomain, and databaseURL');
-    return;
-  }
+  try { cfg = JSON.parse(document.getElementById('fb-config-input').value.trim()); }
+  catch(e) { toast('Invalid JSON — paste the full config object'); return; }
+  if (!cfg.apiKey || !cfg.authDomain || !cfg.databaseURL) { toast('Config needs apiKey, authDomain, and databaseURL'); return; }
   localStorage.setItem('rss.fbconfig', JSON.stringify(cfg));
   initFirebase(cfg);
 }
 
 function tryAutoInit() {
-  const saved = localStorage.getItem('rss.fbconfig');
-  if (!saved) return false;
-  try { initFirebase(JSON.parse(saved)); return true; } catch(e) { return false; }
+  const s = localStorage.getItem('rss.fbconfig');
+  if (!s) return false;
+  try { initFirebase(JSON.parse(s)); return true; } catch { return false; }
 }
 
-function resetFirebase() {
-  localStorage.removeItem('rss.fbconfig');
-  location.reload();
-}
-
+function resetFirebase() { localStorage.removeItem('rss.fbconfig'); location.reload(); }
 async function signIn() {
-  try {
-    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-  } catch(e) {
-    if (e.code !== 'auth/popup-closed-by-user') toast('Sign-in failed: ' + e.message);
-  }
+  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  catch(e) { if (e.code !== 'auth/popup-closed-by-user') toast('Sign-in failed: ' + e.message); }
 }
+async function signOut() { await auth.signOut(); toast('Signed out'); }
+function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
-async function signOut() {
-  await auth.signOut();
-  toast('Signed out');
-}
-
-function toggleUserMenu() {
-  const m = document.getElementById('user-menu');
-  m.style.display = m.style.display === 'none' ? 'block' : 'none';
-}
-
-// ── FIREBASE DATA ───────────────────────────────────────────────
-
+// ── FIREBASE DATA ─────────────────────────────────────────────
 async function loadFromFirebase() {
-  if (!S.user) return;
   const snap = await db.ref(`users/${S.user.uid}`).once('value');
   const data = snap.val() || {};
-
   if (data.settings) S.settings = { ...S.settings, ...data.settings };
+  S.folders   = data.folders   ? Object.values(data.folders)   : [];
   S.feeds     = data.feeds     ? Object.values(data.feeds)     : [];
   S.read      = data.read      ? new Set(Object.keys(data.read)) : new Set();
   S.decisions = data.decisions || {};
-
   renderSidebar();
-
   if (S.feeds.length > 0) {
-    renderArticles(); // show immediately from cache (empty on first run)
-    const refreshes = S.feeds.map(f => fetchFeed(f));
-    await Promise.all(refreshes);
-    renderSidebar();
     renderArticles();
+    await Promise.all(S.feeds.map(f => fetchFeed(f)));
+    renderSidebar(); renderArticles();
   }
 }
 
-// Targeted writes (efficient — never clobbers unrelated data)
-const fbRef = path => db.ref(`users/${S.user.uid}/${path}`);
-
-const saveFeeds     = () => { const o = {}; S.feeds.forEach(f => { o[f.id] = f; }); return fbRef('feeds').set(o); };
-const saveSettings  = () => fbRef('settings').set(S.settings);
-const markReadInDB  = id => fbRef(`read/${id}`).set(true);
-const saveDecisions = map => {
-  const updates = {};
-  Object.entries(map).forEach(([id, d]) => { updates[`users/${S.user.uid}/decisions/${id}`] = d; });
-  return db.ref().update(updates);
+const fbRef      = path => db.ref(`users/${S.user.uid}/${path}`);
+const saveFolders  = () => { const o = {}; S.folders.forEach(f => { o[f.id] = f; }); return fbRef('folders').set(o.length === 0 ? null : o) };
+const saveFeeds    = () => { const o = {}; S.feeds.forEach(f => { o[f.id] = f; }); return fbRef('feeds').set(Object.keys(o).length ? o : null); };
+const saveSettings = () => fbRef('settings').set(S.settings);
+const markReadDB   = id => fbRef(`read/${id}`).set(true);
+const saveDecsBatch = map => {
+  const u = {};
+  Object.entries(map).forEach(([id, d]) => { u[`users/${S.user.uid}/decisions/${id}`] = d; });
+  return db.ref().update(u);
 };
 
-// ── RSS FETCHING ────────────────────────────────────────────────
-
+// ── RSS FETCHING ──────────────────────────────────────────────
 async function fetchFeed(feed) {
-  // Primary: rss2json (returns parsed JSON)
   try {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=50`);
     const d = await r.json();
@@ -640,33 +446,25 @@ async function fetchFeed(feed) {
       return;
     }
   } catch(_) {}
-
-  // Fallback: allorigins CORS proxy + manual XML parse
   try {
     const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(feed.url)}`);
     const d = await r.json();
-    const parsed = parseXML(d.contents, feed);
-    if (parsed) {
-      if (!feed.name && parsed.title) { feed.name = parsed.title; saveFeeds(); }
-      S.articles[feed.id] = parsed.items;
-      return;
+    const p = parseXML(d.contents, feed);
+    if (p) {
+      if (!feed.name && p.title) { feed.name = p.title; saveFeeds(); }
+      S.articles[feed.id] = p.items; return;
     }
   } catch(_) {}
-
   toast('⚠ Could not load: ' + (feed.name || feed.url));
 }
 
 function normalize(raw, feed, idx) {
   const id = makeId(feed.id, raw.guid || raw.link || String(idx));
-  return {
-    id, feedId: feed.id, feedName: feed.name || feed.url,
-    title:       raw.title       || 'Untitled',
-    link:        raw.link        || raw.url || '',
-    pubDate:     raw.pubDate     || raw.published || raw.updated || '',
+  return { id, feedId: feed.id, feedName: feed.name || feed.url,
+    title: raw.title || 'Untitled', link: raw.link || raw.url || '',
+    pubDate: raw.pubDate || raw.published || raw.updated || '',
     description: stripHtml(raw.description || raw.summary || '').slice(0, 300),
-    content:     raw.content     || raw.description || '',
-    author:      raw.author      || ''
-  };
+    content: raw.content || raw.description || '', author: raw.author || '' };
 }
 
 function parseXML(xmlStr, feed) {
@@ -676,83 +474,129 @@ function parseXML(xmlStr, feed) {
     const isAtom = !!doc.querySelector('feed');
     const title  = (isAtom ? doc.querySelector('feed > title') : doc.querySelector('channel > title'))?.textContent || '';
     const nodes  = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
-    const items  = nodes.map((e, i) => {
-      const raw = isAtom ? {
-        guid:   e.querySelector('id')?.textContent,
-        link:   e.querySelector('link')?.getAttribute('href'),
-        title:  e.querySelector('title')?.textContent,
-        pubDate: e.querySelector('published, updated')?.textContent,
-        description: e.querySelector('summary, content')?.textContent,
-        content: e.querySelector('content')?.innerHTML,
+    return { title, items: nodes.map((e, i) => {
+      const r = isAtom ? {
+        guid: e.querySelector('id')?.textContent, link: e.querySelector('link')?.getAttribute('href'),
+        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('published,updated')?.textContent,
+        description: e.querySelector('summary,content')?.textContent, content: e.querySelector('content')?.innerHTML,
         author: e.querySelector('author name')?.textContent
       } : {
-        guid:   e.querySelector('guid')?.textContent,
-        link:   e.querySelector('link')?.textContent,
-        title:  e.querySelector('title')?.textContent,
-        pubDate: e.querySelector('pubDate')?.textContent,
+        guid: e.querySelector('guid')?.textContent, link: e.querySelector('link')?.textContent,
+        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('pubDate')?.textContent,
         description: e.querySelector('description')?.textContent,
-        content: e.querySelector('content\\:encoded, encoded')?.textContent || e.querySelector('description')?.textContent,
-        author: e.querySelector('author, dc\\:creator, creator')?.textContent
+        content: e.querySelector('content\\:encoded,encoded')?.textContent || e.querySelector('description')?.textContent,
+        author: e.querySelector('author,dc\\:creator,creator')?.textContent
       };
-      return normalize(raw, feed, i);
-    });
-    return { title, items };
-  } catch(_) { return null; }
+      return normalize(r, feed, i);
+    })};
+  } catch { return null; }
 }
 
 function makeId(feedId, raw) {
-  // Produces only [a-zA-Z0-9] — safe as Firebase RTDB keys and dataset attributes
   return feedId + '_' + btoa(encodeURIComponent(String(raw || ''))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
 }
+function stripHtml(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
 
-function stripHtml(html) {
-  const d = document.createElement('div');
-  d.innerHTML = html;
-  return d.textContent || '';
-}
-
-// ── SIDEBAR ─────────────────────────────────────────────────────
-
+// ── SIDEBAR ───────────────────────────────────────────────────
 function renderSidebar() {
   const list = document.getElementById('feed-list');
 
+  // All Items badge
   const allUnread = allArticles().filter(a => !S.read.has(a.id)).length;
   const badge = document.getElementById('all-unread');
   badge.textContent = allUnread;
   badge.classList.toggle('hidden', allUnread === 0);
-
-  [...list.querySelectorAll('li:not([data-id="all"])')].forEach(el => el.remove());
-
-  S.feeds.forEach(feed => {
-    const arts   = S.articles[feed.id] || [];
-    const unread = arts.filter(a => !S.read.has(a.id)).length;
-    const li     = document.createElement('li');
-    li.className   = 'feed-item' + (S.currentFeed === feed.id ? ' active' : '');
-    li.dataset.id  = feed.id;
-    li.innerHTML   = `
-      <span class="feed-title" title="${esc(feed.url)}">${esc(feed.name || feed.url)}</span>
-      ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
-      <span class="feed-btns">
-        <button title="Edit"   onclick="event.stopPropagation();openEditFeed('${feed.id}')">✏️</button>
-        <button title="Delete" onclick="event.stopPropagation();deleteFeed('${feed.id}')">🗑</button>
-      </span>`;
-    li.onclick = () => selectFeed(feed.id);
-    list.appendChild(li);
-  });
-
   document.querySelector('[data-id="all"]').classList.toggle('active', S.currentFeed === 'all');
+
+  // Remove everything except "All Items"
+  [...list.querySelectorAll('li:not([data-id="all"]), li.folder-section')].forEach(el => el.remove());
+
+  // Feeds without a folder
+  const ungrouped = S.feeds.filter(f => !f.folderId);
+  ungrouped.forEach(feed => list.appendChild(makeFeedLi(feed, false)));
+
+  // Folders with nested feeds
+  S.folders.forEach(folder => {
+    const folderFeeds = S.feeds.filter(f => f.folderId === folder.id);
+    const folderUnread = folderFeeds.flatMap(f => S.articles[f.id] || []).filter(a => !S.read.has(a.id)).length;
+    const isCollapsed  = collapsed.has(folder.id);
+    const isFolderActive = S.currentFeed === `folder:${folder.id}`;
+
+    // Folder header
+    const header = document.createElement('li');
+    header.className = 'folder-header' + (isFolderActive ? ' active' : '');
+    header.innerHTML = `
+      <span class="folder-arrow ${isCollapsed ? '' : 'open'}">▶</span>
+      <span class="folder-name">${esc(folder.name)}</span>
+      ${folderUnread > 0 ? `<span class="unread-badge">${folderUnread}</span>` : ''}
+      <span class="folder-btns">
+        <button title="Rename" onclick="event.stopPropagation();openEditFolder('${folder.id}')">✏️</button>
+        <button title="Delete" onclick="event.stopPropagation();deleteFolder('${folder.id}')">🗑</button>
+      </span>`;
+    header.addEventListener('click', e => {
+      if (e.target.closest('.folder-btns')) return;
+      selectFeed(`folder:${folder.id}`);
+    });
+    list.appendChild(header);
+
+    // Nested feed items (collapsible)
+    const feedsContainer = document.createElement('li');
+    feedsContainer.style.cssText = isCollapsed ? 'display:none' : '';
+    feedsContainer.dataset.folderFeeds = folder.id;
+
+    const toggleArrow = () => {
+      if (collapsed.has(folder.id)) { collapsed.delete(folder.id); feedsContainer.style.display = ''; header.querySelector('.folder-arrow').classList.add('open'); }
+      else { collapsed.add(folder.id); feedsContainer.style.display = 'none'; header.querySelector('.folder-arrow').classList.remove('open'); }
+      saveCollapsed();
+    };
+    header.querySelector('.folder-arrow').addEventListener('click', e => { e.stopPropagation(); toggleArrow(); });
+
+    const innerUl = document.createElement('ul');
+    innerUl.style.listStyle = 'none';
+    folderFeeds.forEach(feed => innerUl.appendChild(makeFeedLi(feed, true)));
+    feedsContainer.appendChild(innerUl);
+    list.appendChild(feedsContainer);
+  });
 }
 
-// ── ARTICLES ────────────────────────────────────────────────────
+function makeFeedLi(feed, nested) {
+  const arts   = S.articles[feed.id] || [];
+  const unread = arts.filter(a => !S.read.has(a.id)).length;
+  const isActive = S.currentFeed === feed.id;
+  const li = document.createElement('li');
+  li.className = (nested ? 'folder-feed-item' : 'feed-item') + (isActive ? ' active' : '');
+  li.dataset.id = feed.id;
+  li.innerHTML = `
+    <span class="feed-title" title="${esc(feed.url)}">${esc(feed.name || feed.url)}</span>
+    ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+    <span class="feed-btns">
+      <button title="Edit"   onclick="event.stopPropagation();openEditFeed('${feed.id}')">✏️</button>
+      <button title="Delete" onclick="event.stopPropagation();deleteFeed('${feed.id}')">🗑</button>
+    </span>`;
+  li.onclick = () => selectFeed(feed.id);
+  return li;
+}
 
+// ── ARTICLES ─────────────────────────────────────────────────
 function allArticles() {
-  return S.feeds
-    .flatMap(f => S.articles[f.id] || [])
+  return S.feeds.flatMap(f => S.articles[f.id] || [])
     .sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
 }
 
 function visibleArticles() {
-  let list = S.currentFeed === 'all' ? allArticles() : (S.articles[S.currentFeed] || []);
+  let feedIds;
+  if (S.currentFeed === 'all') {
+    feedIds = S.feeds.map(f => f.id);
+  } else if (S.currentFeed.startsWith('folder:')) {
+    const fid = S.currentFeed.slice(7);
+    feedIds = S.feeds.filter(f => f.folderId === fid).map(f => f.id);
+  } else {
+    feedIds = [S.currentFeed];
+  }
+
+  let list = feedIds.flatMap(id => S.articles[id] || [])
+    .sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+
   if (document.getElementById('chk-hide-read')?.checked)
     list = list.filter(a => !S.read.has(a.id));
   if (!document.getElementById('chk-show-filtered')?.checked && S.settings.filterAction === 'hide')
@@ -761,92 +605,63 @@ function visibleArticles() {
 }
 
 function renderArticles() {
-  // Disconnect existing infinite-scroll observer
   if (S.scrollObserver) { S.scrollObserver.disconnect(); S.scrollObserver = null; }
-
   S.currentArticles = visibleArticles();
   S.displayedCount  = 0;
-
   const container = document.getElementById('article-list');
-
   if (S.currentArticles.length === 0 && S.feeds.length === 0) {
     container.innerHTML = `<div class="empty-state"><h3>No feeds yet</h3><p>Add a feed to get started.</p><button class="btn primary" onclick="openAddFeed()">+ Add Feed</button></div>`;
     return;
   }
   if (S.currentArticles.length === 0) {
-    container.innerHTML = `<div class="empty-state"><h3>Nothing to show</h3><p>Try refreshing or adjusting the filter / read options above.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><h3>Nothing to show</h3><p>Try refreshing or adjusting the filter options.</p></div>`;
     return;
   }
-
   container.innerHTML = '';
   appendBatch();
 }
 
 function appendBatch() {
   const container = document.getElementById('article-list');
-
-  // Remove old sentinel before appending
   document.getElementById('scroll-sentinel')?.remove();
-
   const batch = S.currentArticles.slice(S.displayedCount, S.displayedCount + PAGE_SIZE);
   batch.forEach(a => container.appendChild(createArticleEl(a)));
   S.displayedCount += batch.length;
-
   if (S.displayedCount < S.currentArticles.length) {
-    // More to load — attach sentinel + observer
     const sentinel = document.createElement('div');
-    sentinel.id        = 'scroll-sentinel';
-    sentinel.className = 'scroll-sentinel';
+    sentinel.id = 'scroll-sentinel'; sentinel.className = 'scroll-sentinel';
     sentinel.innerHTML = `<span class="spin"></span> Loading…`;
     container.appendChild(sentinel);
-
     S.scrollObserver = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) appendBatch();
     }, { rootMargin: '400px' });
     S.scrollObserver.observe(sentinel);
   } else if (S.displayedCount > 0) {
     const end = document.createElement('div');
-    end.className   = 'list-end';
+    end.className = 'list-end';
     end.textContent = `${S.currentArticles.length} article${S.currentArticles.length !== 1 ? 's' : ''}`;
     container.appendChild(end);
   }
 }
 
 function createArticleEl(a) {
-  const el        = document.createElement('div');
-  el.className    = articleClasses(a);
-  el.dataset.id   = a.id;
-  el.innerHTML    = articleHTML(a);
-  el.addEventListener('click', e => {
-    if (e.target.tagName === 'A') return;
-    toggleArticle(el);
-  });
+  const el = document.createElement('div');
+  el.className = 'article-item' + (!S.read.has(a.id) ? ' unread' : '') + (S.decisions[a.id]?.keep === false ? ' ai-filtered' : '');
+  el.dataset.id = a.id;
+  el.innerHTML = articleHTML(a);
+  el.addEventListener('click', e => { if (e.target.tagName === 'A') return; toggleArticle(el); });
   return el;
 }
 
-function articleClasses(a) {
-  let cls = 'article-item';
-  if (!S.read.has(a.id)) cls += ' unread';
-  const d = S.decisions[a.id];
-  if (d && d.keep === false) cls += ' ai-filtered';
-  return cls;
-}
-
 function articleHTML(a) {
-  const dec        = S.decisions[a.id];
-  const isFiltered = dec && dec.keep === false;
-  const isPending  = !dec && hasFilterRule(a.feedId);
-
+  const dec = S.decisions[a.id];
   let meta = `<span class="tag tag-source">${esc(a.feedName)}</span>`;
   if (a.pubDate) meta += `<span>${relDate(a.pubDate)}</span>`;
   if (a.author)  meta += `<span>${esc(a.author)}</span>`;
-  if (isFiltered) meta += `<span class="tag tag-filtered" title="${esc(dec.reason || '')}">🚫 filtered</span>`;
-  if (isPending)  meta += `<span class="tag tag-pending">⏳ unfiltered</span>`;
-
+  if (dec?.keep === false) meta += `<span class="tag tag-filtered" title="${esc(dec.reason||'')}">🚫 filtered</span>`;
+  else if (!dec && hasFilterRule(a.feedId)) meta += `<span class="tag tag-pending">⏳ unfiltered</span>`;
   const body = sanitize(a.content) || (a.description ? `<p>${esc(a.description)}</p>` : '');
-
-  return `
-    <div class="article-title">${esc(a.title)}</div>
+  return `<div class="article-title">${esc(a.title)}</div>
     <div class="article-meta">${meta}</div>
     <div class="article-body">
       <div class="article-body-inner">${body}</div>
@@ -860,24 +675,77 @@ function toggleArticle(el) {
   if (!wasExpanded) {
     el.classList.add('expanded');
     const id = el.dataset.id;
-    if (!S.read.has(id)) {
-      S.read.add(id);
-      el.classList.remove('unread');
-      markReadInDB(id);   // fire-and-forget
-      renderSidebar();    // update unread counts
-    }
+    if (!S.read.has(id)) { S.read.add(id); el.classList.remove('unread'); markReadDB(id); renderSidebar(); }
   }
 }
 
-// ── FEED MANAGEMENT ─────────────────────────────────────────────
+// ── FOLDER MANAGEMENT ────────────────────────────────────────
+function openAddFolder() {
+  S.editingFolderId = null;
+  document.getElementById('folder-modal-title').textContent = 'New Folder';
+  document.getElementById('btn-save-folder').textContent = 'Create';
+  document.getElementById('folder-name-input').value = '';
+  openOverlay('overlay-folder');
+  setTimeout(() => document.getElementById('folder-name-input').focus(), 60);
+}
+
+function openEditFolder(folderId) {
+  const folder = S.folders.find(f => f.id === folderId);
+  if (!folder) return;
+  S.editingFolderId = folderId;
+  document.getElementById('folder-modal-title').textContent = 'Rename Folder';
+  document.getElementById('btn-save-folder').textContent = 'Save';
+  document.getElementById('folder-name-input').value = folder.name;
+  openOverlay('overlay-folder');
+  setTimeout(() => document.getElementById('folder-name-input').focus(), 60);
+}
+
+async function saveFolder() {
+  const name = document.getElementById('folder-name-input').value.trim();
+  if (!name) { toast('Please enter a folder name'); return; }
+  if (S.editingFolderId) {
+    const folder = S.folders.find(f => f.id === S.editingFolderId);
+    if (folder) folder.name = name;
+  } else {
+    S.folders.push({ id: 'folder_' + Date.now(), name });
+  }
+  await saveFolders();
+  closeOverlay('overlay-folder');
+  renderSidebar();
+  toast(S.editingFolderId ? 'Folder renamed' : 'Folder created!');
+}
+
+async function deleteFolder(folderId) {
+  if (!confirm('Delete this folder? Feeds inside will become uncategorized.')) return;
+  S.feeds.forEach(f => { if (f.folderId === folderId) delete f.folderId; });
+  S.folders = S.folders.filter(f => f.id !== folderId);
+  await Promise.all([saveFolders(), saveFeeds()]);
+  if (S.currentFeed === `folder:${folderId}`) selectFeed('all');
+  else { renderSidebar(); renderArticles(); }
+}
+
+// ── FEED MANAGEMENT ──────────────────────────────────────────
+function populateFolderDropdown(selectedFolderId) {
+  const sel = document.getElementById('fi-folder');
+  sel.innerHTML = '<option value="">— No folder —</option>';
+  S.folders.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id; opt.textContent = f.name;
+    if (f.id === selectedFolderId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
 
 function openAddFeed() {
   S.editingFeedId = null;
-  document.getElementById('feed-modal-title').textContent   = 'Add Feed';
-  document.getElementById('btn-save-feed').textContent      = 'Add Feed';
-  document.getElementById('fi-url').value    = '';
-  document.getElementById('fi-name').value   = '';
+  document.getElementById('feed-modal-title').textContent = 'Add Feed';
+  document.getElementById('btn-save-feed').textContent = 'Add Feed';
+  document.getElementById('fi-url').value = '';
+  document.getElementById('fi-name').value = '';
   document.getElementById('fi-filter').value = '';
+  // Pre-select the current folder if viewing one
+  const preFolder = S.currentFeed.startsWith('folder:') ? S.currentFeed.slice(7) : '';
+  populateFolderDropdown(preFolder);
   openOverlay('overlay-feed');
   setTimeout(() => document.getElementById('fi-url').focus(), 60);
 }
@@ -886,11 +754,12 @@ function openEditFeed(feedId) {
   const feed = S.feeds.find(f => f.id === feedId);
   if (!feed) return;
   S.editingFeedId = feedId;
-  document.getElementById('feed-modal-title').textContent   = 'Edit Feed';
-  document.getElementById('btn-save-feed').textContent      = 'Save';
+  document.getElementById('feed-modal-title').textContent = 'Edit Feed';
+  document.getElementById('btn-save-feed').textContent = 'Save';
   document.getElementById('fi-url').value    = feed.url;
   document.getElementById('fi-name').value   = feed.name       || '';
   document.getElementById('fi-filter').value = feed.filterRule || '';
+  populateFolderDropdown(feed.folderId || '');
   openOverlay('overlay-feed');
 }
 
@@ -899,15 +768,16 @@ async function saveFeed() {
   if (!url) { toast('Please enter a feed URL'); return; }
   const name       = document.getElementById('fi-name').value.trim()   || null;
   const filterRule = document.getElementById('fi-filter').value.trim() || null;
+  const folderId   = document.getElementById('fi-folder').value         || null;
 
   if (S.editingFeedId) {
     const feed = S.feeds.find(f => f.id === S.editingFeedId);
-    if (feed) Object.assign(feed, { url, name, filterRule });
+    if (feed) Object.assign(feed, { url, name, filterRule, folderId });
     await saveFeeds();
     closeOverlay('overlay-feed');
     renderSidebar(); renderArticles();
   } else {
-    const feed = { id: 'f' + Date.now(), url, name, filterRule };
+    const feed = { id: 'f' + Date.now(), url, name, filterRule, folderId };
     S.feeds.push(feed);
     await saveFeeds();
     closeOverlay('overlay-feed');
@@ -928,8 +798,7 @@ async function deleteFeed(feedId) {
   else { renderSidebar(); renderArticles(); }
 }
 
-// ── SETTINGS ────────────────────────────────────────────────────
-
+// ── SETTINGS ─────────────────────────────────────────────────
 function openSettings() {
   document.getElementById('si-apikey').value = S.settings.apiKey       || '';
   document.getElementById('si-filter').value = S.settings.globalFilter || '';
@@ -949,20 +818,30 @@ async function applySettings() {
   toast('Settings saved');
 }
 
-// ── NAVIGATION ───────────────────────────────────────────────────
-
+// ── NAVIGATION ────────────────────────────────────────────────
 function selectFeed(feedId) {
   S.currentFeed = feedId;
-  const name    = feedId === 'all' ? 'All Items' : (S.feeds.find(f => f.id === feedId)?.name || 'Feed');
+  let name = 'All Items';
+  if (feedId.startsWith('folder:')) {
+    const fid = feedId.slice(7);
+    name = S.folders.find(f => f.id === fid)?.name || 'Folder';
+  } else if (feedId !== 'all') {
+    name = S.feeds.find(f => f.id === feedId)?.name || 'Feed';
+  }
   document.getElementById('current-feed-name').textContent = name;
   renderSidebar(); renderArticles();
 }
 
 async function refreshFeeds() {
-  const list = S.currentFeed === 'all' ? S.feeds : S.feeds.filter(f => f.id === S.currentFeed);
-  if (!list.length) { toast('No feeds to refresh'); return; }
+  let toRefresh;
+  if (S.currentFeed === 'all') { toRefresh = S.feeds; }
+  else if (S.currentFeed.startsWith('folder:')) {
+    const fid = S.currentFeed.slice(7);
+    toRefresh = S.feeds.filter(f => f.folderId === fid);
+  } else { toRefresh = S.feeds.filter(f => f.id === S.currentFeed); }
+  if (!toRefresh.length) { toast('No feeds to refresh'); return; }
   setRefreshBusy(true);
-  await Promise.all(list.map(f => fetchFeed(f)));
+  await Promise.all(toRefresh.map(f => fetchFeed(f)));
   setRefreshBusy(false);
   renderSidebar(); renderArticles();
   toast('Refreshed');
@@ -970,12 +849,10 @@ async function refreshFeeds() {
 
 function setRefreshBusy(v) {
   const btn = document.getElementById('btn-refresh');
-  btn.disabled    = v;
-  btn.textContent = v ? '↻ Loading…' : '↻ Refresh';
+  btn.disabled = v; btn.textContent = v ? '↻ Loading…' : '↻ Refresh';
 }
 
-// ── AI FILTERING ─────────────────────────────────────────────────
-
+// ── AI FILTERING ──────────────────────────────────────────────
 function hasFilterRule(feedId) {
   if (S.settings.globalFilter) return true;
   return !!(S.feeds.find(f => f.id === feedId)?.filterRule);
@@ -983,38 +860,29 @@ function hasFilterRule(feedId) {
 
 async function runAIFilter() {
   if (!S.settings.apiKey) { toast('Add a Claude API key in ⚙ Settings first'); openSettings(); return; }
-
   const toFilter = visibleArticles().filter(a => hasFilterRule(a.feedId) && !S.decisions[a.id]);
   if (!toFilter.length) { toast('All visible articles already have a filter decision'); return; }
-
   const btn = document.getElementById('btn-filter');
   btn.disabled = true; btn.textContent = '⏳ Filtering…';
-
   const statusEl = document.getElementById('filter-status');
   statusEl.classList.remove('hidden');
-
-  // Group by effective rule so we minimise API calls
   const groups = {};
   toFilter.forEach(a => {
     const feed = S.feeds.find(f => f.id === a.feedId);
     const rule = feed?.filterRule || S.settings.globalFilter;
     (groups[rule] = groups[rule] || []).push(a);
   });
-
-  let done = 0;
-  const total = toFilter.length;
-  const FBATCH = 15;
-
+  let done = 0; const total = toFilter.length; const FBATCH = 15;
   try {
     for (const [rule, arts] of Object.entries(groups)) {
       for (let i = 0; i < arts.length; i += FBATCH) {
         const batch = arts.slice(i, i + FBATCH);
         statusEl.textContent = `🤖 Filtering ${done + batch.length} / ${total}…`;
         const results = await callClaude(batch, rule);
-        const newDec  = {};
+        const newDec = {};
         results.forEach(r => { S.decisions[r.id] = { keep: r.keep, reason: r.reason || '' }; newDec[r.id] = S.decisions[r.id]; });
         done += batch.length;
-        await saveDecisions(newDec);
+        await saveDecsBatch(newDec);
         renderArticles();
       }
     }
@@ -1022,51 +890,65 @@ async function runAIFilter() {
     setTimeout(() => statusEl.classList.add('hidden'), 3500);
   } catch(err) {
     statusEl.textContent = `❌ ${err.message}`;
-    toast('Filter error: ' + err.message);
     setTimeout(() => statusEl.classList.add('hidden'), 6000);
+    toast('Filter error: ' + err.message);
   }
-
   btn.disabled = false; btn.textContent = '🤖 AI Filter';
 }
 
 async function callClaude(articles, rule) {
-  const body = articles.map(a =>
-    `ID: ${a.id}\nTitle: ${a.title}\nSummary: ${a.description}`
-  ).join('\n\n---\n\n');
-
+  const body = articles.map(a => `ID: ${a.id}\nTitle: ${a.title}\nSummary: ${a.description}`).join('\n\n---\n\n');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': S.settings.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: S.settings.model,
-      max_tokens: 2048,
-      messages: [{
-        role: 'user',
-        content: `You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]`
-      }]
-    })
+    headers: { 'Content-Type': 'application/json', 'x-api-key': S.settings.apiKey,
+      'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: S.settings.model, max_tokens: 2048, messages: [{
+      role: 'user',
+      content: `You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]`
+    }]})
   });
-
-  if (!resp.ok) {
-    const e = await resp.json().catch(() => ({}));
-    throw new Error(e.error?.message || `HTTP ${resp.status}`);
-  }
-  const data  = await resp.json();
-  const text  = data.content?.[0]?.text || '';
+  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+  const data = await resp.json();
+  const text = data.content?.[0]?.text || '';
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Unexpected AI response format');
   return JSON.parse(match[0]);
 }
 
-// ── OVERLAYS ──────────────────────────────────────────────────────
-
+// ── UTILS ─────────────────────────────────────────────────────
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function relDate(str) {
+  if (!str) return '';
+  try {
+    const diff = Date.now() - new Date(str);
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000)   return `${Math.floor(diff/60000)}m ago`;
+    if (diff < 86400000)  return `${Math.floor(diff/3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff/86400000)}d ago`;
+    return new Date(str).toLocaleDateString();
+  } catch { return ''; }
+}
+function sanitize(html) {
+  if (!html) return '';
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
+  tmp.querySelectorAll('*').forEach(el => {
+    [...el.attributes].forEach(attr => {
+      if (/^on/i.test(attr.name) || (attr.name === 'href' && /^javascript:/i.test(attr.value))) el.removeAttribute(attr.name);
+    });
+  });
+  return tmp.innerHTML;
+}
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+function toast(msg, ms = 3200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.add('hidden'), ms);
+}
 
 document.querySelectorAll('.overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
@@ -1075,54 +957,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(el => el.classList.remove('open'));
 });
 
-// ── UTILITIES ──────────────────────────────────────────────────────
-
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function relDate(str) {
-  if (!str) return '';
-  try {
-    const diff = Date.now() - new Date(str);
-    if (diff < 60000)     return 'just now';
-    if (diff < 3600000)   return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000)  return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-    return new Date(str).toLocaleDateString();
-  } catch { return ''; }
-}
-
-function sanitize(html) {
-  if (!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
-  tmp.querySelectorAll('*').forEach(el => {
-    [...el.attributes].forEach(attr => {
-      if (/^on/i.test(attr.name) || (attr.name === 'href' && /^javascript:/i.test(attr.value)))
-        el.removeAttribute(attr.name);
-    });
-  });
-  return tmp.innerHTML;
-}
-
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
-
-function toast(msg, ms = 3200) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.add('hidden'), ms);
-}
-
-// ── INIT ───────────────────────────────────────────────────────────
-
-if (!tryAutoInit()) {
-  // Show setup screen (visible by default in HTML)
-}
+// ── INIT ──────────────────────────────────────────────────────
+if (!tryAutoInit()) { /* setup screen visible by default */ }
 </script>
 </body>
 </html>
