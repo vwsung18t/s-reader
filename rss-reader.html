@@ -13,7 +13,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 a { color: #3b7dd8; }
 .hidden { display: none !important; }
 
-/* ── FULL-SCREEN (setup / sign-in) ── */
+/* ── FULL-SCREEN ── */
 .full-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #eef1f7; padding: 24px; }
 .center-card { background: #fff; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
 .center-card h1 { font-size: 22px; margin-bottom: 6px; }
@@ -22,7 +22,7 @@ a { color: #3b7dd8; }
 /* ── FORM ── */
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-.field input, .field textarea, .field select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; background: #fafafa; transition: border-color 0.15s, box-shadow 0.15s; }
+.field input, .field textarea, .field select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; background: #fafafa; transition: border-color 0.15s; }
 .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: #3b7dd8; background: #fff; box-shadow: 0 0 0 3px rgba(59,125,216,0.1); }
 .field textarea { min-height: 70px; resize: vertical; }
 .field .hint { font-size: 11px; color: #999; margin-top: 4px; line-height: 1.5; }
@@ -36,7 +36,7 @@ a { color: #3b7dd8; }
 .btn.google { padding: 10px 20px; font-size: 14px; gap: 10px; }
 .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 
-/* ── SETUP SCREEN ── */
+/* ── SETUP INSTRUCTIONS ── */
 #setup-instructions { margin-top: 18px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
 #setup-instructions summary { padding: 10px 14px; font-size: 12px; font-weight: 600; color: #555; cursor: pointer; background: #f9f9f9; user-select: none; }
 #setup-instructions summary:hover { background: #f0f0f0; }
@@ -47,7 +47,7 @@ a { color: #3b7dd8; }
 .rules-block { background: #f5f5f5; border-radius: 5px; padding: 10px 12px; margin-top: 10px; font-size: 11px; font-family: monospace; white-space: pre; overflow-x: auto; border: 1px solid #e0e0e0; }
 .google-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-/* ── MAIN APP ── */
+/* ── APP LAYOUT ── */
 #app { display: flex; height: 100vh; overflow: hidden; }
 
 /* ── SIDEBAR ── */
@@ -59,22 +59,22 @@ a { color: #3b7dd8; }
 #user-menu { padding: 10px 12px; background: #12122a; border-bottom: 1px solid #2a2a40; font-size: 12px; color: #777; }
 #user-email { margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #sidebar-actions { padding: 7px 8px; display: flex; gap: 5px; border-bottom: 1px solid #22223a; }
-.btn-side { flex: 1; padding: 6px; font-size: 12px; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; font-family: inherit; }
-.btn-side.add { background: #3b7dd8; color: #fff; }
-.btn-side.add:hover { background: #2d6bbf; }
-.btn-side.cfg { background: #25253f; color: #aaa; }
-.btn-side.cfg:hover { background: #30305a; color: #fff; }
+.btn-side { flex: 1; padding: 6px 4px; font-size: 12px; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; font-family: inherit; }
+.btn-side.add  { background: #3b7dd8; color: #fff; }
+.btn-side.add:hover  { background: #2d6bbf; }
+.btn-side.add2 { background: #2d5a3d; color: #fff; }
+.btn-side.add2:hover { background: #245030; }
+.btn-side.cfg  { background: #25253f; color: #aaa; }
+.btn-side.cfg:hover  { background: #30305a; color: #fff; }
 
 #feed-list { list-style: none; overflow-y: auto; flex: 1; padding: 4px 0; }
 
-/* "All Items" and bare feeds */
 .feed-item { padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; border-left: 3px solid transparent; transition: background 0.1s; }
 .feed-item:hover { background: rgba(255,255,255,0.05); }
 .feed-item.active { background: rgba(59,125,216,0.18); border-left-color: #3b7dd8; color: #fff; }
 .feed-item .feed-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Folder headers */
-.folder-header { padding: 5px 10px 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid transparent; transition: background 0.1s; user-select: none; }
+.folder-header { padding: 5px 10px 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: #777; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid transparent; transition: background 0.1s; user-select: none; }
 .folder-header:hover { background: rgba(255,255,255,0.04); }
 .folder-header.active { background: rgba(59,125,216,0.15); border-left-color: #3b7dd8; color: #bbb; }
 .folder-arrow { font-size: 10px; transition: transform 0.18s; flex-shrink: 0; color: #555; }
@@ -82,12 +82,10 @@ a { color: #3b7dd8; }
 .folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-btns { display: none; gap: 2px; }
 .folder-header:hover .folder-btns { display: flex; }
-.folder-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
+.folder-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; }
 .folder-btns button:hover { color: #ddd; background: rgba(255,255,255,0.1); }
 
-/* Nested feeds inside folder */
-.folder-feeds { overflow: hidden; }
-.folder-feed-item { padding: 5px 12px 5px 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; border-left: 3px solid transparent; transition: background 0.1s; color: #999; }
+.folder-feed-item { padding: 5px 12px 5px 24px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; border-left: 3px solid transparent; transition: background 0.1s; color: #888; }
 .folder-feed-item:hover { background: rgba(255,255,255,0.05); color: #bbb; }
 .folder-feed-item.active { background: rgba(59,125,216,0.15); border-left-color: #3b7dd8; color: #fff; }
 .folder-feed-item .feed-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -95,7 +93,7 @@ a { color: #3b7dd8; }
 .unread-badge { background: #3b7dd8; color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 11px; min-width: 18px; text-align: center; flex-shrink: 0; }
 .feed-btns { display: none; gap: 2px; }
 .feed-item:hover .feed-btns, .folder-feed-item:hover .feed-btns { display: flex; }
-.feed-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
+.feed-btns button { background: none; border: none; color: #555; cursor: pointer; font-size: 12px; padding: 1px 3px; border-radius: 3px; }
 .feed-btns button:hover { color: #ddd; background: rgba(255,255,255,0.1); }
 
 /* ── MAIN ── */
@@ -104,24 +102,33 @@ a { color: #3b7dd8; }
 #current-feed-name { font-weight: 700; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chk-label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
 #filter-status { font-size: 12px; color: #7a5c00; background: #fffde7; border-bottom: 1px solid #fff176; padding: 5px 16px; flex-shrink: 0; }
-#article-list { flex: 1; overflow-y: auto; }
+#article-list { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
 
 /* ── ARTICLES ── */
-.article-item { background: #fff; border-bottom: 1px solid #ebebeb; padding: 11px 16px; cursor: pointer; border-left: 3px solid transparent; transition: background 0.1s; }
+.article-item { background: #fff; border-bottom: 1px solid #ebebeb; padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: background 0.1s; }
 .article-item:hover { background: #f9f9fb; }
 .article-item.unread .article-title { font-weight: 700; }
 .article-item.expanded { background: #f4f8ff; border-left-color: #3b7dd8; }
 .article-item.ai-filtered { border-left-color: #e53935; }
 .article-item.ai-filtered .article-title { color: #999; }
+.article-item.kb-focused { outline: 2px solid #3b7dd8; outline-offset: -2px; }
+
+.article-header { display: flex; align-items: flex-start; gap: 10px; }
+.article-header-text { flex: 1; min-width: 0; }
 .article-title { font-size: 14px; color: #1a1a1a; line-height: 1.45; }
 .article-meta { margin-top: 4px; font-size: 11px; color: #999; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+
+/* Thumbnail */
+.article-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 5px; flex-shrink: 0; background: #f0f0f0; display: block; }
+
 .tag { padding: 1px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; }
-.tag-source { background: #e8f0fe; color: #2d5fb5; }
+.tag-source   { background: #e8f0fe; color: #2d5fb5; }
 .tag-filtered { background: #fce4e4; color: #b71c1c; cursor: help; }
-.tag-pending { background: #fff8e1; color: #e65100; }
+.tag-pending  { background: #fff8e1; color: #e65100; }
+
 .article-body { display: none; margin-top: 10px; }
 .article-item.expanded .article-body { display: block; }
-.article-body-inner { font-size: 13px; line-height: 1.7; color: #333; max-height: 420px; overflow-y: auto; padding: 12px; background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 6px; }
+.article-body-inner { font-size: 13px; line-height: 1.7; color: #333; max-height: 460px; overflow-y: auto; padding: 12px; background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 6px; }
 .article-body-inner img { max-width: 100%; height: auto; border-radius: 4px; display: block; margin: 8px 0; }
 .article-body-inner p { margin-bottom: 0.75em; }
 .article-link { display: inline-block; margin-top: 9px; font-size: 12px; font-weight: 600; text-decoration: none; }
@@ -134,6 +141,16 @@ a { color: #3b7dd8; }
 .overlay.open { display: flex; }
 .modal { background: #fff; border-radius: 10px; padding: 24px; width: 480px; max-width: 95vw; max-height: 88vh; overflow-y: auto; box-shadow: 0 12px 48px rgba(0,0,0,0.22); }
 .modal h2 { font-size: 15px; font-weight: 700; margin-bottom: 18px; }
+
+/* Keyboard shortcuts modal */
+.shortcuts-modal { width: 640px; }
+.shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+.shortcuts-section { margin-bottom: 18px; }
+.shortcuts-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #999; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eee; }
+.shortcut-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; }
+.shortcut-row .keys { flex-shrink: 0; width: 100px; display: flex; gap: 3px; flex-wrap: wrap; }
+.shortcut-row .desc { color: #555; }
+kbd { display: inline-block; background: #f4f4f4; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; font-size: 11px; font-family: monospace; color: #333; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
 
 /* ── TOAST ── */
 #toast { position: fixed; bottom: 20px; right: 20px; background: #222; color: #fff; padding: 9px 16px; border-radius: 7px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 9999; }
@@ -150,34 +167,34 @@ a { color: #3b7dd8; }
 </head>
 <body>
 
-<!-- ══ SETUP SCREEN ══ -->
+<!-- ══ SETUP ══ -->
 <div id="screen-setup" class="full-screen">
   <div class="center-card">
     <h1>📰 RSS Reader</h1>
-    <p class="subtitle">Connect Firebase to sync feeds, read state, and filter decisions across all your devices.</p>
+    <p class="subtitle">Connect Firebase to sync across devices.</p>
     <div class="field">
       <label>Firebase Config (JSON)</label>
       <textarea id="fb-config-input" rows="7" placeholder='{
   "apiKey": "...",
-  "authDomain": "your-project.firebaseapp.com",
-  "databaseURL": "https://your-project-default-rtdb.firebaseio.com",
-  "projectId": "your-project",
+  "authDomain": "...",
+  "databaseURL": "https://...-default-rtdb.firebaseio.com",
+  "projectId": "...",
   "storageBucket": "...",
   "messagingSenderId": "...",
   "appId": "..."
 }'></textarea>
-      <div class="hint">Paste the config object from Firebase console → Project settings → Your apps. Make sure it includes <code>databaseURL</code>.</div>
+      <div class="hint">Paste from Firebase console → Project settings → Your apps. Must include <code>databaseURL</code>.</div>
     </div>
     <button class="btn primary" style="width:100%" onclick="connectFirebase()">Connect →</button>
     <details id="setup-instructions">
-      <summary>Step-by-step setup instructions</summary>
+      <summary>Step-by-step setup</summary>
       <div class="inst-body">
         <ol>
-          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Add project</strong>.</li>
-          <li><strong>Add a Web App</strong>: click the <code>&lt;/&gt;</code> icon → register → copy the config object.</li>
-          <li><strong>Enable Authentication</strong>: Build → Authentication → Sign-in method → Google → Enable → Save.</li>
-          <li><strong>Enable Realtime Database</strong>: Build → Realtime Database → Create database → Start in test mode.</li>
-          <li><strong>Set security rules</strong> (Rules tab):
+          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Add project.</li>
+          <li>Add a Web App → copy the config object.</li>
+          <li>Authentication → Sign-in method → Google → Enable.</li>
+          <li>Realtime Database → Create database → Start in test mode.</li>
+          <li>Rules tab → paste:
             <div class="rules-block">{
   "rules": {
     "users": {
@@ -189,14 +206,14 @@ a { color: #3b7dd8; }
   }
 }</div>
           </li>
-          <li>Return here, paste the config, click <strong>Connect</strong>.</li>
+          <li>Return here, paste config, click Connect.</li>
         </ol>
       </div>
     </details>
   </div>
 </div>
 
-<!-- ══ SIGN-IN SCREEN ══ -->
+<!-- ══ SIGN-IN ══ -->
 <div id="screen-signin" class="full-screen hidden">
   <div class="center-card" style="text-align:center;max-width:360px">
     <h1 style="margin-bottom:8px">📰 RSS Reader</h1>
@@ -205,11 +222,11 @@ a { color: #3b7dd8; }
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Sign in with Google
     </button>
-    <button class="btn" style="width:100%;margin-top:8px;justify-content:center" onclick="resetFirebase()">← Different Firebase project</button>
+    <button class="btn" style="width:100%;margin-top:8px;justify-content:center" onclick="resetFirebase()">← Different project</button>
   </div>
 </div>
 
-<!-- ══ MAIN APP ══ -->
+<!-- ══ APP ══ -->
 <div id="app" class="hidden">
   <div id="sidebar">
     <div id="sidebar-header">
@@ -221,9 +238,9 @@ a { color: #3b7dd8; }
       <button class="btn" style="font-size:11px;padding:3px 8px;background:#25253f;border-color:#35355a;color:#aaa;margin-top:4px" onclick="signOut()">Sign out</button>
     </div>
     <div id="sidebar-actions">
-      <button class="btn-side add" onclick="openAddFeed()">+ Feed</button>
-      <button class="btn-side add" style="background:#2d5a3d" onclick="openAddFolder()">+ Folder</button>
-      <button class="btn-side cfg" onclick="openSettings()">⚙</button>
+      <button class="btn-side add"  onclick="openAddFeed()">+ Feed</button>
+      <button class="btn-side add2" onclick="openAddFolder()">+ Folder</button>
+      <button class="btn-side cfg"  onclick="openSettings()">⚙</button>
     </div>
     <ul id="feed-list">
       <li class="feed-item active" data-id="all" onclick="selectFeed('all')">
@@ -266,14 +283,12 @@ a { color: #3b7dd8; }
     </div>
     <div class="field">
       <label>Folder</label>
-      <select id="fi-folder">
-        <option value="">— No folder —</option>
-      </select>
+      <select id="fi-folder"><option value="">— No folder —</option></select>
     </div>
     <div class="field">
       <label>Feed-specific AI filter rule <span style="font-weight:400;color:#bbb;text-transform:none">(optional)</span></label>
-      <textarea id="fi-filter" placeholder="e.g. Only keep original reporting. Skip sponsored content."></textarea>
-      <div class="hint">Overrides the global filter rule for this feed only.</div>
+      <textarea id="fi-filter" placeholder="e.g. Skip sponsored posts and press releases."></textarea>
+      <div class="hint">Overrides the global filter for this feed only.</div>
     </div>
     <div class="btn-row">
       <button class="btn" onclick="closeOverlay('overlay-feed')">Cancel</button>
@@ -304,24 +319,24 @@ a { color: #3b7dd8; }
     <div class="field">
       <label>Claude API Key</label>
       <input type="password" id="si-apikey" placeholder="sk-ant-...">
-      <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored in Firebase, accessible only to you.</div>
+      <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored in Firebase.</div>
     </div>
     <div class="field">
       <label>Global AI Filter Rule</label>
-      <textarea id="si-filter" placeholder="e.g. Only show technology, science, and software articles. Filter out sports, politics, and celebrity news."></textarea>
-      <div class="hint">Applied to all feeds unless a feed has its own rule. Leave blank to disable.</div>
+      <textarea id="si-filter" placeholder="e.g. Only show technology and science. Filter out sports, politics, and celebrity news."></textarea>
+      <div class="hint">Applied to all feeds unless a feed has its own rule.</div>
     </div>
     <div class="field">
       <label>When an article is filtered…</label>
       <select id="si-action">
-        <option value="mark">Show with a red "filtered" indicator</option>
-        <option value="hide">Hide it (toggle "Show filtered" to reveal)</option>
+        <option value="mark">Show with a red indicator</option>
+        <option value="hide">Hide it</option>
       </select>
     </div>
     <div class="field">
       <label>AI Model</label>
       <select id="si-model">
-        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest &amp; cheapest (recommended)</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest &amp; cheapest</option>
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — smarter, slower</option>
       </select>
     </div>
@@ -329,6 +344,44 @@ a { color: #3b7dd8; }
       <button class="btn" onclick="closeOverlay('overlay-settings')">Cancel</button>
       <button class="btn primary" onclick="applySettings()">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: KEYBOARD SHORTCUTS ══ -->
+<div class="overlay" id="overlay-shortcuts">
+  <div class="modal shortcuts-modal">
+    <h2>⌨ Keyboard Shortcuts</h2>
+    <div class="shortcuts-grid">
+      <div>
+        <div class="shortcuts-section">
+          <h3>Articles</h3>
+          <div class="shortcut-row"><span class="keys"><kbd>j</kbd><kbd>n</kbd></span><span class="desc">Next article</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>k</kbd><kbd>p</kbd></span><span class="desc">Previous article</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>o</kbd><kbd>v</kbd></span><span class="desc">Open in new tab</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>m</kbd></span><span class="desc">Toggle read/unread</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>Space</kbd></span><span class="desc">Scroll down</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧</kbd><kbd>Space</kbd></span><span class="desc">Scroll up</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧A</kbd></span><span class="desc">Mark all as read</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="shortcuts-section">
+          <h3>Navigation</h3>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧J</kbd><kbd>⇧N</kbd></span><span class="desc">Next feed / folder</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧K</kbd><kbd>⇧P</kbd></span><span class="desc">Previous feed / folder</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧X</kbd></span><span class="desc">Collapse folder</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧C</kbd></span><span class="desc">Collapse all folders</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>⇧E</kbd></span><span class="desc">Expand all folders</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>General</h3>
+          <div class="shortcut-row"><span class="keys"><kbd>r</kbd></span><span class="desc">Refresh</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>a</kbd></span><span class="desc">Add feed</span></div>
+          <div class="shortcut-row"><span class="keys"><kbd>?</kbd></span><span class="desc">Show this help</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn primary" onclick="closeOverlay('overlay-shortcuts')">Close</button></div>
   </div>
 </div>
 
@@ -342,27 +395,27 @@ const PAGE_SIZE = 20;
 // ── STATE ─────────────────────────────────────────────────────
 const S = {
   user: null,
-  folders: [],          // [{id, name}]
-  feeds: [],            // [{id, url, name, folderId, filterRule}]
+  folders: [],
+  feeds: [],
   settings: { apiKey: '', globalFilter: '', filterAction: 'mark', model: 'claude-haiku-4-5-20251001' },
-  articles: {},         // feedId → [article]
-  decisions: {},        // articleId → {keep, reason}
+  articles: {},
+  decisions: {},
   read: new Set(),
-  currentFeed: 'all',   // 'all' | feedId | 'folder:folderId'
+  currentFeed: 'all',
   editingFeedId: null,
   editingFolderId: null,
   currentArticles: [],
   displayedCount: 0,
-  scrollObserver: null
+  scrollObserver: null,
+  focusedIndex: -1
 };
 
-// Folder collapse state lives in localStorage (UI-only, no need to sync)
 const collapsed = new Set(JSON.parse(localStorage.getItem('rss.collapsed') || '[]'));
-function saveCollapsed() { localStorage.setItem('rss.collapsed', JSON.stringify([...collapsed])); }
+const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify([...collapsed]));
 
 let auth, db;
 
-// ── FIREBASE INIT ─────────────────────────────────────────────
+// ── FIREBASE ─────────────────────────────────────────────────
 function initFirebase(config) {
   try {
     if (firebase.apps.length) firebase.apps.forEach(a => a.delete());
@@ -377,8 +430,7 @@ function initFirebase(config) {
         hide('screen-signin'); show('app');
         await loadFromFirebase();
       } else {
-        S.user = null;
-        hide('app'); show('screen-signin');
+        S.user = null; hide('app'); show('screen-signin');
       }
     });
   } catch(e) { toast('Firebase error: ' + e.message); }
@@ -387,8 +439,8 @@ function initFirebase(config) {
 function connectFirebase() {
   let cfg;
   try { cfg = JSON.parse(document.getElementById('fb-config-input').value.trim()); }
-  catch(e) { toast('Invalid JSON — paste the full config object'); return; }
-  if (!cfg.apiKey || !cfg.authDomain || !cfg.databaseURL) { toast('Config needs apiKey, authDomain, and databaseURL'); return; }
+  catch { toast('Invalid JSON — paste the full config object'); return; }
+  if (!cfg.apiKey || !cfg.authDomain || !cfg.databaseURL) { toast('Config needs apiKey, authDomain, databaseURL'); return; }
   localStorage.setItem('rss.fbconfig', JSON.stringify(cfg));
   initFirebase(cfg);
 }
@@ -424,9 +476,9 @@ async function loadFromFirebase() {
   }
 }
 
-const fbRef      = path => db.ref(`users/${S.user.uid}/${path}`);
-const saveFolders  = () => { const o = {}; S.folders.forEach(f => { o[f.id] = f; }); return fbRef('folders').set(o.length === 0 ? null : o) };
+const fbRef       = path => db.ref(`users/${S.user.uid}/${path}`);
 const saveFeeds    = () => { const o = {}; S.feeds.forEach(f => { o[f.id] = f; }); return fbRef('feeds').set(Object.keys(o).length ? o : null); };
+const saveFolders  = () => { const o = {}; S.folders.forEach(f => { o[f.id] = f; }); return fbRef('folders').set(Object.keys(o).length ? o : null); };
 const saveSettings = () => fbRef('settings').set(S.settings);
 const markReadDB   = id => fbRef(`read/${id}`).set(true);
 const saveDecsBatch = map => {
@@ -436,35 +488,81 @@ const saveDecsBatch = map => {
 };
 
 // ── RSS FETCHING ──────────────────────────────────────────────
+const enc = s => encodeURIComponent(s);
+
 async function fetchFeed(feed) {
+  // 1. rss2json — returns parsed JSON
   try {
-    const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=50`);
-    const d = await r.json();
-    if (d.status === 'ok') {
-      if (!feed.name && d.feed?.title) { feed.name = d.feed.title; saveFeeds(); }
-      S.articles[feed.id] = (d.items || []).map((item, i) => normalize(item, feed, i));
-      return;
+    const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${enc(feed.url)}&count=50`);
+    if (r.ok) {
+      const d = await r.json();
+      if (d.status === 'ok') {
+        if (!feed.name && d.feed?.title) { feed.name = d.feed.title; saveFeeds(); }
+        S.articles[feed.id] = (d.items || []).map((item, i) => normalize(item, feed, i));
+        return;
+      }
     }
   } catch(_) {}
+
+  // 2. corsproxy.io — raw XML
   try {
-    const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(feed.url)}`);
-    const d = await r.json();
-    const p = parseXML(d.contents, feed);
-    if (p) {
-      if (!feed.name && p.title) { feed.name = p.title; saveFeeds(); }
-      S.articles[feed.id] = p.items; return;
+    const r = await fetch(`https://corsproxy.io/?url=${enc(feed.url)}`);
+    if (r.ok) {
+      const p = parseXML(await r.text(), feed);
+      if (p) { applyParsed(p, feed); return; }
     }
   } catch(_) {}
+
+  // 3. allorigins — raw XML via JSON wrapper
+  try {
+    const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${enc(feed.url)}`);
+    if (r.ok) {
+      const d = await r.json();
+      const p = parseXML(d.contents, feed);
+      if (p) { applyParsed(p, feed); return; }
+    }
+  } catch(_) {}
+
+  // 4. codetabs proxy — raw XML
+  try {
+    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${enc(feed.url)}`);
+    if (r.ok) {
+      const p = parseXML(await r.text(), feed);
+      if (p) { applyParsed(p, feed); return; }
+    }
+  } catch(_) {}
+
   toast('⚠ Could not load: ' + (feed.name || feed.url));
+}
+
+function applyParsed(parsed, feed) {
+  if (!feed.name && parsed.title) { feed.name = parsed.title; saveFeeds(); }
+  S.articles[feed.id] = parsed.items;
+}
+
+function extractImage(raw) {
+  if (raw.thumbnail && typeof raw.thumbnail === 'string' && raw.thumbnail.startsWith('http')) return raw.thumbnail;
+  const encUrl = raw.enclosure?.link || raw.enclosure?.url || '';
+  if (encUrl && /\.(jpe?g|png|gif|webp)/i.test(encUrl)) return encUrl;
+  if (raw.mediaUrl) return raw.mediaUrl;
+  // First img tag in content/description
+  const html = raw.content || raw.description || '';
+  const m = html.match(/<img[^>]+src=["']([^"']{10,})["']/i);
+  return m ? m[1] : null;
 }
 
 function normalize(raw, feed, idx) {
   const id = makeId(feed.id, raw.guid || raw.link || String(idx));
-  return { id, feedId: feed.id, feedName: feed.name || feed.url,
-    title: raw.title || 'Untitled', link: raw.link || raw.url || '',
-    pubDate: raw.pubDate || raw.published || raw.updated || '',
+  return {
+    id, feedId: feed.id, feedName: feed.name || feed.url,
+    title:       raw.title        || 'Untitled',
+    link:        raw.link         || raw.url || '',
+    pubDate:     raw.pubDate      || raw.published || raw.updated || '',
     description: stripHtml(raw.description || raw.summary || '').slice(0, 300),
-    content: raw.content || raw.description || '', author: raw.author || '' };
+    content:     raw.content      || raw.description || '',
+    author:      raw.author       || '',
+    image:       extractImage(raw) || null
+  };
 }
 
 function parseXML(xmlStr, feed) {
@@ -475,19 +573,32 @@ function parseXML(xmlStr, feed) {
     const title  = (isAtom ? doc.querySelector('feed > title') : doc.querySelector('channel > title'))?.textContent || '';
     const nodes  = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
     return { title, items: nodes.map((e, i) => {
-      const r = isAtom ? {
-        guid: e.querySelector('id')?.textContent, link: e.querySelector('link')?.getAttribute('href'),
-        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('published,updated')?.textContent,
-        description: e.querySelector('summary,content')?.textContent, content: e.querySelector('content')?.innerHTML,
-        author: e.querySelector('author name')?.textContent
+      const mediaUrl =
+        e.querySelector('media\\:thumbnail')?.getAttribute('url') ||
+        e.querySelector('media\\:content')?.getAttribute('url')   ||
+        (() => { const enc = e.querySelector('enclosure'); return (enc && /image/i.test(enc.getAttribute('type') || '')) ? enc.getAttribute('url') : null; })() ||
+        null;
+      const raw = isAtom ? {
+        guid: e.querySelector('id')?.textContent,
+        link: e.querySelector('link')?.getAttribute('href'),
+        title: e.querySelector('title')?.textContent,
+        pubDate: e.querySelector('published,updated')?.textContent,
+        description: e.querySelector('summary,content')?.textContent,
+        content: e.querySelector('content')?.innerHTML,
+        author: e.querySelector('author name')?.textContent,
+        mediaUrl
       } : {
-        guid: e.querySelector('guid')?.textContent, link: e.querySelector('link')?.textContent,
-        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('pubDate')?.textContent,
+        guid: e.querySelector('guid')?.textContent,
+        link: e.querySelector('link')?.textContent,
+        title: e.querySelector('title')?.textContent,
+        pubDate: e.querySelector('pubDate')?.textContent,
         description: e.querySelector('description')?.textContent,
         content: e.querySelector('content\\:encoded,encoded')?.textContent || e.querySelector('description')?.textContent,
-        author: e.querySelector('author,dc\\:creator,creator')?.textContent
+        author: e.querySelector('author,dc\\:creator,creator')?.textContent,
+        enclosure: { url: e.querySelector('enclosure')?.getAttribute('url'), type: e.querySelector('enclosure')?.getAttribute('type') },
+        mediaUrl
       };
-      return normalize(r, feed, i);
+      return normalize(raw, feed, i);
     })};
   } catch { return null; }
 }
@@ -500,31 +611,24 @@ function stripHtml(html) { const d = document.createElement('div'); d.innerHTML 
 // ── SIDEBAR ───────────────────────────────────────────────────
 function renderSidebar() {
   const list = document.getElementById('feed-list');
-
-  // All Items badge
   const allUnread = allArticles().filter(a => !S.read.has(a.id)).length;
   const badge = document.getElementById('all-unread');
   badge.textContent = allUnread;
   badge.classList.toggle('hidden', allUnread === 0);
   document.querySelector('[data-id="all"]').classList.toggle('active', S.currentFeed === 'all');
 
-  // Remove everything except "All Items"
   [...list.querySelectorAll('li:not([data-id="all"]), li.folder-section')].forEach(el => el.remove());
 
-  // Feeds without a folder
-  const ungrouped = S.feeds.filter(f => !f.folderId);
-  ungrouped.forEach(feed => list.appendChild(makeFeedLi(feed, false)));
+  S.feeds.filter(f => !f.folderId).forEach(feed => list.appendChild(makeFeedLi(feed, false)));
 
-  // Folders with nested feeds
   S.folders.forEach(folder => {
-    const folderFeeds = S.feeds.filter(f => f.folderId === folder.id);
+    const folderFeeds  = S.feeds.filter(f => f.folderId === folder.id);
     const folderUnread = folderFeeds.flatMap(f => S.articles[f.id] || []).filter(a => !S.read.has(a.id)).length;
     const isCollapsed  = collapsed.has(folder.id);
-    const isFolderActive = S.currentFeed === `folder:${folder.id}`;
+    const isActive     = S.currentFeed === `folder:${folder.id}`;
 
-    // Folder header
     const header = document.createElement('li');
-    header.className = 'folder-header' + (isFolderActive ? ' active' : '');
+    header.className = 'folder-header' + (isActive ? ' active' : '');
     header.innerHTML = `
       <span class="folder-arrow ${isCollapsed ? '' : 'open'}">▶</span>
       <span class="folder-name">${esc(folder.name)}</span>
@@ -533,38 +637,33 @@ function renderSidebar() {
         <button title="Rename" onclick="event.stopPropagation();openEditFolder('${folder.id}')">✏️</button>
         <button title="Delete" onclick="event.stopPropagation();deleteFolder('${folder.id}')">🗑</button>
       </span>`;
-    header.addEventListener('click', e => {
-      if (e.target.closest('.folder-btns')) return;
-      selectFeed(`folder:${folder.id}`);
-    });
-    list.appendChild(header);
+    header.addEventListener('click', e => { if (e.target.closest('.folder-btns')) return; selectFeed(`folder:${folder.id}`); });
 
-    // Nested feed items (collapsible)
-    const feedsContainer = document.createElement('li');
-    feedsContainer.style.cssText = isCollapsed ? 'display:none' : '';
-    feedsContainer.dataset.folderFeeds = folder.id;
+    const feedsWrap = document.createElement('li');
+    feedsWrap.style.cssText = isCollapsed ? 'display:none' : '';
+    feedsWrap.dataset.folderFeeds = folder.id;
 
-    const toggleArrow = () => {
-      if (collapsed.has(folder.id)) { collapsed.delete(folder.id); feedsContainer.style.display = ''; header.querySelector('.folder-arrow').classList.add('open'); }
-      else { collapsed.add(folder.id); feedsContainer.style.display = 'none'; header.querySelector('.folder-arrow').classList.remove('open'); }
+    const toggleCollapse = () => {
+      if (collapsed.has(folder.id)) { collapsed.delete(folder.id); feedsWrap.style.display = ''; header.querySelector('.folder-arrow').classList.add('open'); }
+      else { collapsed.add(folder.id); feedsWrap.style.display = 'none'; header.querySelector('.folder-arrow').classList.remove('open'); }
       saveCollapsed();
     };
-    header.querySelector('.folder-arrow').addEventListener('click', e => { e.stopPropagation(); toggleArrow(); });
+    header.querySelector('.folder-arrow').addEventListener('click', e => { e.stopPropagation(); toggleCollapse(); });
 
     const innerUl = document.createElement('ul');
     innerUl.style.listStyle = 'none';
     folderFeeds.forEach(feed => innerUl.appendChild(makeFeedLi(feed, true)));
-    feedsContainer.appendChild(innerUl);
-    list.appendChild(feedsContainer);
+    feedsWrap.appendChild(innerUl);
+    list.appendChild(header);
+    list.appendChild(feedsWrap);
   });
 }
 
 function makeFeedLi(feed, nested) {
   const arts   = S.articles[feed.id] || [];
   const unread = arts.filter(a => !S.read.has(a.id)).length;
-  const isActive = S.currentFeed === feed.id;
   const li = document.createElement('li');
-  li.className = (nested ? 'folder-feed-item' : 'feed-item') + (isActive ? ' active' : '');
+  li.className = (nested ? 'folder-feed-item' : 'feed-item') + (S.currentFeed === feed.id ? ' active' : '');
   li.dataset.id = feed.id;
   li.innerHTML = `
     <span class="feed-title" title="${esc(feed.url)}">${esc(feed.name || feed.url)}</span>
@@ -579,26 +678,17 @@ function makeFeedLi(feed, nested) {
 
 // ── ARTICLES ─────────────────────────────────────────────────
 function allArticles() {
-  return S.feeds.flatMap(f => S.articles[f.id] || [])
-    .sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+  return S.feeds.flatMap(f => S.articles[f.id] || []).sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
 }
 
 function visibleArticles() {
   let feedIds;
-  if (S.currentFeed === 'all') {
-    feedIds = S.feeds.map(f => f.id);
-  } else if (S.currentFeed.startsWith('folder:')) {
-    const fid = S.currentFeed.slice(7);
-    feedIds = S.feeds.filter(f => f.folderId === fid).map(f => f.id);
-  } else {
-    feedIds = [S.currentFeed];
-  }
+  if (S.currentFeed === 'all') feedIds = S.feeds.map(f => f.id);
+  else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); feedIds = S.feeds.filter(f => f.folderId === fid).map(f => f.id); }
+  else feedIds = [S.currentFeed];
 
-  let list = feedIds.flatMap(id => S.articles[id] || [])
-    .sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
-
-  if (document.getElementById('chk-hide-read')?.checked)
-    list = list.filter(a => !S.read.has(a.id));
+  let list = feedIds.flatMap(id => S.articles[id] || []).sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+  if (document.getElementById('chk-hide-read')?.checked) list = list.filter(a => !S.read.has(a.id));
   if (!document.getElementById('chk-show-filtered')?.checked && S.settings.filterAction === 'hide')
     list = list.filter(a => { const d = S.decisions[a.id]; return !d || d.keep !== false; });
   return list;
@@ -608,6 +698,7 @@ function renderArticles() {
   if (S.scrollObserver) { S.scrollObserver.disconnect(); S.scrollObserver = null; }
   S.currentArticles = visibleArticles();
   S.displayedCount  = 0;
+  S.focusedIndex    = -1;
   const container = document.getElementById('article-list');
   if (S.currentArticles.length === 0 && S.feeds.length === 0) {
     container.innerHTML = `<div class="empty-state"><h3>No feeds yet</h3><p>Add a feed to get started.</p><button class="btn primary" onclick="openAddFeed()">+ Add Feed</button></div>`;
@@ -628,14 +719,12 @@ function appendBatch() {
   batch.forEach(a => container.appendChild(createArticleEl(a)));
   S.displayedCount += batch.length;
   if (S.displayedCount < S.currentArticles.length) {
-    const sentinel = document.createElement('div');
-    sentinel.id = 'scroll-sentinel'; sentinel.className = 'scroll-sentinel';
-    sentinel.innerHTML = `<span class="spin"></span> Loading…`;
-    container.appendChild(sentinel);
-    S.scrollObserver = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) appendBatch();
-    }, { rootMargin: '400px' });
-    S.scrollObserver.observe(sentinel);
+    const s = document.createElement('div');
+    s.id = 'scroll-sentinel'; s.className = 'scroll-sentinel';
+    s.innerHTML = `<span class="spin"></span> Loading…`;
+    container.appendChild(s);
+    S.scrollObserver = new IntersectionObserver(entries => { if (entries[0].isIntersecting) appendBatch(); }, { rootMargin: '400px' });
+    S.scrollObserver.observe(s);
   } else if (S.displayedCount > 0) {
     const end = document.createElement('div');
     end.className = 'list-end';
@@ -649,7 +738,7 @@ function createArticleEl(a) {
   el.className = 'article-item' + (!S.read.has(a.id) ? ' unread' : '') + (S.decisions[a.id]?.keep === false ? ' ai-filtered' : '');
   el.dataset.id = a.id;
   el.innerHTML = articleHTML(a);
-  el.addEventListener('click', e => { if (e.target.tagName === 'A') return; toggleArticle(el); });
+  el.addEventListener('click', e => { if (e.target.tagName === 'A') return; expandArticle(el); });
   return el;
 }
 
@@ -660,24 +749,210 @@ function articleHTML(a) {
   if (a.author)  meta += `<span>${esc(a.author)}</span>`;
   if (dec?.keep === false) meta += `<span class="tag tag-filtered" title="${esc(dec.reason||'')}">🚫 filtered</span>`;
   else if (!dec && hasFilterRule(a.feedId)) meta += `<span class="tag tag-pending">⏳ unfiltered</span>`;
+
+  const thumb = a.image ? `<img class="article-thumb" src="${esc(a.image)}" loading="lazy" onerror="this.remove()" alt="">` : '';
   const body = sanitize(a.content) || (a.description ? `<p>${esc(a.description)}</p>` : '');
-  return `<div class="article-title">${esc(a.title)}</div>
-    <div class="article-meta">${meta}</div>
-    <div class="article-body">
-      <div class="article-body-inner">${body}</div>
-      ${a.link ? `<a class="article-link" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Read full article →</a>` : ''}
-    </div>`;
+
+  return `<div class="article-header">
+    <div class="article-header-text">
+      <div class="article-title">${esc(a.title)}</div>
+      <div class="article-meta">${meta}</div>
+    </div>
+    ${thumb}
+  </div>
+  <div class="article-body">
+    <div class="article-body-inner">${body}</div>
+    ${a.link ? `<a class="article-link" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Read full article →</a>` : ''}
+  </div>`;
 }
 
-function toggleArticle(el) {
+function expandArticle(el) {
   const wasExpanded = el.classList.contains('expanded');
   document.querySelectorAll('.article-item.expanded').forEach(e => e.classList.remove('expanded'));
   if (!wasExpanded) {
     el.classList.add('expanded');
-    const id = el.dataset.id;
-    if (!S.read.has(id)) { S.read.add(id); el.classList.remove('unread'); markReadDB(id); renderSidebar(); }
+    markArticleRead(el);
   }
 }
+
+function markArticleRead(el) {
+  const id = el.dataset.id;
+  if (!S.read.has(id)) { S.read.add(id); el.classList.remove('unread'); markReadDB(id); renderSidebar(); }
+}
+
+// ── KEYBOARD NAVIGATION ───────────────────────────────────────
+function focusArticle(idx) {
+  if (S.currentArticles.length === 0) return;
+  idx = Math.max(0, Math.min(idx, S.currentArticles.length - 1));
+
+  // Load batches until this index is rendered
+  while (idx >= S.displayedCount && S.displayedCount < S.currentArticles.length) appendBatch();
+
+  S.focusedIndex = idx;
+  document.querySelectorAll('.article-item.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+
+  const art = S.currentArticles[idx];
+  const el  = document.querySelector(`.article-item[data-id="${art.id}"]`);
+  if (!el) return;
+
+  el.classList.add('kb-focused');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  expandArticle(el);
+}
+
+function getSidebarItems() {
+  const items = ['all'];
+  S.feeds.filter(f => !f.folderId).forEach(f => items.push(f.id));
+  S.folders.forEach(folder => {
+    items.push(`folder:${folder.id}`);
+    S.feeds.filter(f => f.folderId === folder.id).forEach(f => items.push(f.id));
+  });
+  return items;
+}
+
+async function markAllRead() {
+  const toMark = visibleArticles().filter(a => !S.read.has(a.id));
+  if (!toMark.length) { toast('Nothing to mark'); return; }
+  toMark.forEach(a => S.read.add(a.id));
+  const u = {};
+  toMark.forEach(a => { u[`users/${S.user.uid}/read/${a.id}`] = true; });
+  await db.ref().update(u);
+  renderSidebar(); renderArticles();
+  toast(`Marked ${toMark.length} as read`);
+}
+
+// Keyboard state
+let gPending = false, gTimer = null;
+
+document.addEventListener('keydown', e => {
+  // Skip when typing in an input/textarea
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  // Skip when a modal is open
+  if (document.querySelector('.overlay.open')) {
+    if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+    return;
+  }
+
+  const list = document.getElementById('article-list');
+
+  // g-sequence shortcuts
+  if (gPending) {
+    clearTimeout(gTimer); gPending = false;
+    if (e.key === 'a') selectFeed('all');
+    return;
+  }
+  if (e.key === 'g' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    gPending = true;
+    gTimer = setTimeout(() => { gPending = false; }, 1000);
+    return;
+  }
+
+  switch(true) {
+    // Next article
+    case (e.key === 'j' || e.key === 'n') && !e.shiftKey:
+      e.preventDefault();
+      focusArticle(S.focusedIndex + 1);
+      break;
+
+    // Previous article
+    case (e.key === 'k' || e.key === 'p') && !e.shiftKey:
+      e.preventDefault();
+      focusArticle(S.focusedIndex - 1);
+      break;
+
+    // Open in new tab
+    case (e.key === 'o' || e.key === 'v') && !e.shiftKey: {
+      if (S.focusedIndex < 0) break;
+      const art = S.currentArticles[S.focusedIndex];
+      if (art?.link) window.open(art.link, '_blank', 'noopener');
+      break;
+    }
+
+    // Toggle read/unread
+    case e.key === 'm' && !e.shiftKey: {
+      if (S.focusedIndex < 0) break;
+      const art = S.currentArticles[S.focusedIndex];
+      const el  = document.querySelector(`.article-item[data-id="${art.id}"]`);
+      if (!el) break;
+      if (S.read.has(art.id)) {
+        S.read.delete(art.id);
+        el.classList.add('unread');
+        fbRef(`read/${art.id}`).remove();
+        renderSidebar();
+      } else {
+        markArticleRead(el);
+      }
+      break;
+    }
+
+    // Scroll
+    case e.key === ' ' && !e.shiftKey:
+      e.preventDefault();
+      list.scrollBy({ top: list.clientHeight * 0.8, behavior: 'smooth' });
+      break;
+    case e.key === ' ' && e.shiftKey:
+      e.preventDefault();
+      list.scrollBy({ top: -list.clientHeight * 0.8, behavior: 'smooth' });
+      break;
+
+    // Mark all read
+    case e.key === 'A' && e.shiftKey:
+      e.preventDefault();
+      markAllRead();
+      break;
+
+    // Next feed/folder
+    case (e.key === 'J' || e.key === 'N') && e.shiftKey: {
+      e.preventDefault();
+      const items = getSidebarItems();
+      const idx   = items.indexOf(S.currentFeed);
+      if (idx < items.length - 1) selectFeed(items[idx + 1]);
+      break;
+    }
+
+    // Previous feed/folder
+    case (e.key === 'K' || e.key === 'P') && e.shiftKey: {
+      e.preventDefault();
+      const items = getSidebarItems();
+      const idx   = items.indexOf(S.currentFeed);
+      if (idx > 0) selectFeed(items[idx - 1]);
+      break;
+    }
+
+    // Collapse current folder
+    case e.key === 'X' && e.shiftKey: {
+      if (!S.currentFeed.startsWith('folder:')) break;
+      const fid = S.currentFeed.slice(7);
+      collapsed.add(fid); saveCollapsed(); renderSidebar();
+      break;
+    }
+
+    // Collapse all folders
+    case e.key === 'C' && e.shiftKey:
+      S.folders.forEach(f => collapsed.add(f.id)); saveCollapsed(); renderSidebar();
+      break;
+
+    // Expand all folders
+    case e.key === 'E' && e.shiftKey:
+      collapsed.clear(); saveCollapsed(); renderSidebar();
+      break;
+
+    // Refresh
+    case e.key === 'r' && !e.shiftKey && !e.ctrlKey && !e.metaKey:
+      refreshFeeds();
+      break;
+
+    // Add feed
+    case e.key === 'a' && !e.shiftKey:
+      openAddFeed();
+      break;
+
+    // Show shortcuts
+    case e.key === '?' || (e.key === 'h' && !e.shiftKey):
+      openOverlay('overlay-shortcuts');
+      break;
+  }
+});
 
 // ── FOLDER MANAGEMENT ────────────────────────────────────────
 function openAddFolder() {
@@ -716,7 +991,7 @@ async function saveFolder() {
 }
 
 async function deleteFolder(folderId) {
-  if (!confirm('Delete this folder? Feeds inside will become uncategorized.')) return;
+  if (!confirm('Delete this folder? Feeds will become uncategorized.')) return;
   S.feeds.forEach(f => { if (f.folderId === folderId) delete f.folderId; });
   S.folders = S.folders.filter(f => f.id !== folderId);
   await Promise.all([saveFolders(), saveFeeds()]);
@@ -725,14 +1000,14 @@ async function deleteFolder(folderId) {
 }
 
 // ── FEED MANAGEMENT ──────────────────────────────────────────
-function populateFolderDropdown(selectedFolderId) {
+function populateFolderDropdown(selectedId) {
   const sel = document.getElementById('fi-folder');
   sel.innerHTML = '<option value="">— No folder —</option>';
   S.folders.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.id; opt.textContent = f.name;
-    if (f.id === selectedFolderId) opt.selected = true;
-    sel.appendChild(opt);
+    const o = document.createElement('option');
+    o.value = f.id; o.textContent = f.name;
+    if (f.id === selectedId) o.selected = true;
+    sel.appendChild(o);
   });
 }
 
@@ -743,9 +1018,7 @@ function openAddFeed() {
   document.getElementById('fi-url').value = '';
   document.getElementById('fi-name').value = '';
   document.getElementById('fi-filter').value = '';
-  // Pre-select the current folder if viewing one
-  const preFolder = S.currentFeed.startsWith('folder:') ? S.currentFeed.slice(7) : '';
-  populateFolderDropdown(preFolder);
+  populateFolderDropdown(S.currentFeed.startsWith('folder:') ? S.currentFeed.slice(7) : '');
   openOverlay('overlay-feed');
   setTimeout(() => document.getElementById('fi-url').focus(), 60);
 }
@@ -822,23 +1095,17 @@ async function applySettings() {
 function selectFeed(feedId) {
   S.currentFeed = feedId;
   let name = 'All Items';
-  if (feedId.startsWith('folder:')) {
-    const fid = feedId.slice(7);
-    name = S.folders.find(f => f.id === fid)?.name || 'Folder';
-  } else if (feedId !== 'all') {
-    name = S.feeds.find(f => f.id === feedId)?.name || 'Feed';
-  }
+  if (feedId.startsWith('folder:'))      name = S.folders.find(f => f.id === feedId.slice(7))?.name || 'Folder';
+  else if (feedId !== 'all')             name = S.feeds.find(f => f.id === feedId)?.name || 'Feed';
   document.getElementById('current-feed-name').textContent = name;
   renderSidebar(); renderArticles();
 }
 
 async function refreshFeeds() {
   let toRefresh;
-  if (S.currentFeed === 'all') { toRefresh = S.feeds; }
-  else if (S.currentFeed.startsWith('folder:')) {
-    const fid = S.currentFeed.slice(7);
-    toRefresh = S.feeds.filter(f => f.folderId === fid);
-  } else { toRefresh = S.feeds.filter(f => f.id === S.currentFeed); }
+  if (S.currentFeed === 'all') toRefresh = S.feeds;
+  else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); toRefresh = S.feeds.filter(f => f.folderId === fid); }
+  else toRefresh = S.feeds.filter(f => f.id === S.currentFeed);
   if (!toRefresh.length) { toast('No feeds to refresh'); return; }
   setRefreshBusy(true);
   await Promise.all(toRefresh.map(f => fetchFeed(f)));
@@ -867,11 +1134,7 @@ async function runAIFilter() {
   const statusEl = document.getElementById('filter-status');
   statusEl.classList.remove('hidden');
   const groups = {};
-  toFilter.forEach(a => {
-    const feed = S.feeds.find(f => f.id === a.feedId);
-    const rule = feed?.filterRule || S.settings.globalFilter;
-    (groups[rule] = groups[rule] || []).push(a);
-  });
+  toFilter.forEach(a => { const feed = S.feeds.find(f => f.id === a.feedId); const rule = feed?.filterRule || S.settings.globalFilter; (groups[rule] = groups[rule] || []).push(a); });
   let done = 0; const total = toFilter.length; const FBATCH = 15;
   try {
     for (const [rule, arts] of Object.entries(groups)) {
@@ -900,17 +1163,12 @@ async function callClaude(articles, rule) {
   const body = articles.map(a => `ID: ${a.id}\nTitle: ${a.title}\nSummary: ${a.description}`).join('\n\n---\n\n');
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': S.settings.apiKey,
-      'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: S.settings.model, max_tokens: 2048, messages: [{
-      role: 'user',
-      content: `You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]`
-    }]})
+    headers: { 'Content-Type': 'application/json', 'x-api-key': S.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: S.settings.model, max_tokens: 2048, messages: [{ role: 'user', content: `You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]` }] })
   });
   if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
   const data = await resp.json();
-  const text = data.content?.[0]?.text || '';
-  const match = text.match(/\[[\s\S]*\]/);
+  const match = (data.content?.[0]?.text || '').match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Unexpected AI response format');
   return JSON.parse(match[0]);
 }
@@ -921,7 +1179,7 @@ function relDate(str) {
   if (!str) return '';
   try {
     const diff = Date.now() - new Date(str);
-    if (diff < 60000) return 'just now';
+    if (diff < 60000)     return 'just now';
     if (diff < 3600000)   return `${Math.floor(diff/60000)}m ago`;
     if (diff < 86400000)  return `${Math.floor(diff/3600000)}h ago`;
     if (diff < 604800000) return `${Math.floor(diff/86400000)}d ago`;
@@ -932,11 +1190,7 @@ function sanitize(html) {
   if (!html) return '';
   const tmp = document.createElement('div'); tmp.innerHTML = html;
   tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
-  tmp.querySelectorAll('*').forEach(el => {
-    [...el.attributes].forEach(attr => {
-      if (/^on/i.test(attr.name) || (attr.name === 'href' && /^javascript:/i.test(attr.value))) el.removeAttribute(attr.name);
-    });
-  });
+  tmp.querySelectorAll('*').forEach(el => { [...el.attributes].forEach(attr => { if (/^on/i.test(attr.name) || (attr.name==='href'&&/^javascript:/i.test(attr.value))) el.removeAttribute(attr.name); }); });
   return tmp.innerHTML;
 }
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -952,9 +1206,6 @@ function toast(msg, ms = 3200) {
 
 document.querySelectorAll('.overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(el => el.classList.remove('open'));
 });
 
 // ── INIT ──────────────────────────────────────────────────────
