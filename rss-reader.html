@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RSS Reader</title>
+<title>S Reader</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -102,6 +102,8 @@ a { color: #7aabf7; }
 #toolbar { background: #161616; padding: 8px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #242424; flex-shrink: 0; }
 #current-feed-name { font-weight: 700; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e0e0e0; }
 .chk-label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
+.sort-select { background: #222; color: #aaa; border: 1px solid #2e2e2e; border-radius: 5px; padding: 4px 8px; font-size: 12px; font-family: inherit; cursor: pointer; }
+.sort-select:focus { outline: none; border-color: #5a9cf8; }
 #filter-status { font-size: 12px; color: #b8a060; background: #1e1a0e; border-bottom: 1px solid #2e2610; padding: 5px 16px; flex-shrink: 0; }
 #article-list { flex: 1; overflow-y: auto; scroll-behavior: smooth; background: #111; }
 
@@ -117,7 +119,7 @@ a { color: #7aabf7; }
 .article-thumb { width: auto; height: 200px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #222; display: block; aspect-ratio: 4/3; }
 .article-content { flex: 1; min-width: 0; }
 .article-title { color: #d0d0d0; }
-.article-title-link { font-size: 14px; color: #d0d0d0; line-height: 1.45; text-decoration: none; font-weight: inherit; }
+.article-title-link { font-size: 16px; color: #d0d0d0; line-height: 1.45; text-decoration: none; font-weight: inherit; }
 .article-title-link:hover { color: #7aabf7; text-decoration: underline; }
 .article-meta { margin-top: 4px; font-size: 11px; color: #555; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
 
@@ -171,7 +173,7 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
 <!-- ══ SETUP ══ -->
 <div id="screen-setup" class="full-screen">
   <div class="center-card">
-    <h1>📰 RSS Reader</h1>
+    <h1>📰 S Reader</h1>
     <p class="subtitle">Connect Firebase to sync across devices.</p>
     <div class="field">
       <label>Firebase Config (JSON)</label>
@@ -217,7 +219,7 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
 <!-- ══ SIGN-IN ══ -->
 <div id="screen-signin" class="full-screen hidden">
   <div class="center-card" style="text-align:center;max-width:360px">
-    <h1 style="margin-bottom:8px">📰 RSS Reader</h1>
+    <h1 style="margin-bottom:8px">📰 S Reader</h1>
     <p class="subtitle">Sign in to sync your feeds across devices.</p>
     <button class="btn primary google" onclick="signIn()" style="width:100%;justify-content:center">
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
@@ -231,7 +233,7 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
 <div id="app" class="hidden">
   <div id="sidebar">
     <div id="sidebar-header">
-      <span>📰 RSS Reader</span>
+      <span>📰 S Reader</span>
       <button class="user-btn" onclick="toggleUserMenu()" title="Account">👤</button>
     </div>
     <div id="user-menu" class="hidden">
@@ -254,8 +256,13 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
   <div id="main">
     <div id="toolbar">
       <span id="current-feed-name">All Items</span>
+      <select id="sort-order" class="sort-select" onchange="renderArticles()">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+      </select>
       <label class="chk-label"><input type="checkbox" id="chk-show-filtered" onchange="renderArticles()"> Show filtered</label>
       <label class="chk-label"><input type="checkbox" id="chk-hide-read" onchange="renderArticles()"> Hide read</label>
+      <button class="btn" onclick="markAllRead()">✓ Mark all read</button>
       <button class="btn" id="btn-refresh" onclick="refreshFeeds()">↻ Refresh</button>
       <button class="btn primary" id="btn-filter" onclick="runAIFilter()">🤖 AI Filter</button>
     </div>
@@ -613,6 +620,7 @@ function stripHtml(html) { const d = document.createElement('div'); d.innerHTML 
 function renderSidebar() {
   const list = document.getElementById('feed-list');
   const allUnread = allArticles().filter(a => !S.read.has(a.id)).length;
+  document.title = allUnread > 0 ? `(${allUnread}) S Reader` : 'S Reader';
   const badge = document.getElementById('all-unread');
   badge.textContent = allUnread;
   badge.classList.toggle('hidden', allUnread === 0);
@@ -688,7 +696,11 @@ function visibleArticles() {
   else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); feedIds = S.feeds.filter(f => f.folderId === fid).map(f => f.id); }
   else feedIds = [S.currentFeed];
 
-  let list = feedIds.flatMap(id => S.articles[id] || []).sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+  const oldest = document.getElementById('sort-order')?.value === 'oldest';
+  let list = feedIds.flatMap(id => S.articles[id] || []).sort((a, b) => {
+    const diff = new Date(a.pubDate || 0) - new Date(b.pubDate || 0);
+    return oldest ? diff : -diff;
+  });
   if (document.getElementById('chk-hide-read')?.checked) list = list.filter(a => !S.read.has(a.id));
   if (!document.getElementById('chk-show-filtered')?.checked && S.settings.filterAction === 'hide')
     list = list.filter(a => { const d = S.decisions[a.id]; return !d || d.keep !== false; });
