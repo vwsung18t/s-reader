@@ -532,48 +532,55 @@ const saveDecsBatch = map => {
 // ── RSS FETCHING ──────────────────────────────────────────────
 const enc = s => encodeURIComponent(s);
 
-async function fetchFeed(feed) {
-  // 1. rss2json — returns parsed JSON
-  try {
+// Remember which proxy index worked per feed so we skip failed ones on refresh
+const proxyCache = {};
+
+const PROXIES = [
+  async (feed) => {
     const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${enc(feed.url)}&count=50`);
-    if (r.ok) {
-      const d = await r.json();
-      if (d.status === 'ok') {
-        if (!feed.name && d.feed?.title) { feed.name = d.feed.title; saveFeeds(); }
-        S.articles[feed.id] = (d.items || []).map((item, i) => normalize(item, feed, i));
+    if (!r.ok) return false;
+    const d = await r.json();
+    if (d.status !== 'ok') return false;
+    if (!feed.name && d.feed?.title) { feed.name = d.feed.title; saveFeeds(); }
+    S.articles[feed.id] = (d.items || []).map((item, i) => normalize(item, feed, i));
+    return true;
+  },
+  async (feed) => {
+    const r = await fetch(`https://corsproxy.io/?url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p) return false;
+    applyParsed(p, feed); return true;
+  },
+  async (feed) => {
+    const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const d = await r.json();
+    const p = parseXML(d.contents, feed);
+    if (!p) return false;
+    applyParsed(p, feed); return true;
+  },
+  async (feed) => {
+    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p) return false;
+    applyParsed(p, feed); return true;
+  },
+];
+
+async function fetchFeed(feed) {
+  const start = proxyCache[feed.id] ?? 0;
+  // Try from last known-good proxy first, then wrap around
+  const order = [...Array(PROXIES.length).keys()].map(i => (i + start) % PROXIES.length);
+  for (const i of order) {
+    try {
+      if (await PROXIES[i](feed)) {
+        proxyCache[feed.id] = i; // remember for next refresh
         return;
       }
-    }
-  } catch(_) {}
-
-  // 2. corsproxy.io — raw XML
-  try {
-    const r = await fetch(`https://corsproxy.io/?url=${enc(feed.url)}`);
-    if (r.ok) {
-      const p = parseXML(await r.text(), feed);
-      if (p) { applyParsed(p, feed); return; }
-    }
-  } catch(_) {}
-
-  // 3. allorigins — raw XML via JSON wrapper
-  try {
-    const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${enc(feed.url)}`);
-    if (r.ok) {
-      const d = await r.json();
-      const p = parseXML(d.contents, feed);
-      if (p) { applyParsed(p, feed); return; }
-    }
-  } catch(_) {}
-
-  // 4. codetabs proxy — raw XML
-  try {
-    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${enc(feed.url)}`);
-    if (r.ok) {
-      const p = parseXML(await r.text(), feed);
-      if (p) { applyParsed(p, feed); return; }
-    }
-  } catch(_) {}
-
+    } catch(_) {}
+  }
   toast('⚠ Could not load: ' + (feed.name || feed.url));
 }
 
