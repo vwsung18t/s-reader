@@ -166,6 +166,24 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
 /* ── SPINNER ── */
 .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #333; border-top-color: #5a9cf8; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+#btn-sidebar-toggle { display: none; background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1; }
+#btn-sidebar-toggle:hover { color: #fff; }
+#sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 99; }
+
+@media (max-width: 700px) {
+  #btn-sidebar-toggle { display: block; }
+  #sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 100; width: 240px; transition: left 0.22s ease; box-shadow: 6px 0 24px rgba(0,0,0,0.6); }
+  #sidebar.open { left: 0; }
+  #sidebar.open + #sidebar-overlay { display: block; }
+  #toolbar { flex-wrap: wrap; padding: 6px 10px; gap: 6px; }
+  #current-feed-name { width: 100%; order: -1; }
+  .article-layout { flex-direction: column; }
+  .article-thumb { width: 100%; height: 200px; aspect-ratio: unset; border-radius: 4px; }
+  .shortcuts-modal { width: 95vw; }
+  .shortcuts-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -236,6 +254,7 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
       <span>📰 S Reader</span>
       <button class="user-btn" onclick="toggleUserMenu()" title="Account">👤</button>
     </div>
+
     <div id="user-menu" class="hidden">
       <div id="user-email"></div>
       <button class="btn" style="font-size:11px;padding:3px 8px;background:#25253f;border-color:#35355a;color:#aaa;margin-top:4px" onclick="signOut()">Sign out</button>
@@ -252,11 +271,13 @@ kbd { display: inline-block; background: #222; border: 1px solid #3a3a3a; border
       </li>
     </ul>
   </div>
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <div id="main">
     <div id="toolbar">
+      <button id="btn-sidebar-toggle" onclick="toggleSidebar()">☰</button>
       <span id="current-feed-name">All Items</span>
-      <select id="sort-order" class="sort-select" onchange="renderArticles()">
+      <select id="sort-order" class="sort-select" onchange="renderArticles(); this.blur()">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
       </select>
@@ -825,7 +846,11 @@ function focusArticle(idx) {
   if (!el) return;
 
   focusArticleEl(el);
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Scroll article to top of the viewing area
+  const container = document.getElementById('article-list');
+  const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  container.scrollBy({ top: offset, behavior: 'smooth' });
 }
 
 function getSidebarItems() {
@@ -849,11 +874,19 @@ async function markAllRead() {
   toast(`Marked ${toMark.length} as read`);
 }
 
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); }
+
 // Keyboard state
 let gPending = false, gTimer = null;
 
 document.addEventListener('keydown', e => {
-  // Skip when typing in an input/textarea
+  // If a navigational key is pressed while a non-text control has focus, blur it first
+  const navKeys = new Set(['j','k','n','p','o','v','m','r','a','?','h',' ']);
+  if (navKeys.has(e.key) && ['SELECT','BUTTON'].includes(e.target.tagName)) {
+    e.target.blur();
+  }
+  // Skip when typing in an input/textarea/select
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
   // Skip when a modal is open
   if (document.querySelector('.overlay.open')) {
@@ -1127,6 +1160,7 @@ function selectFeed(feedId) {
   else if (feedId !== 'all')             name = S.feeds.find(f => f.id === feedId)?.name || 'Feed';
   document.getElementById('current-feed-name').textContent = name;
   renderSidebar(); renderArticles();
+  if (window.innerWidth <= 700) closeSidebar();
 }
 
 async function refreshFeeds() {
