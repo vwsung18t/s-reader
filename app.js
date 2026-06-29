@@ -18,7 +18,7 @@ const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify
 let centralAuth, centralDb, userDb;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'sungchoi@gmail.com'; // ← update this to your email
+const ADMIN_EMAIL = 'YOUR_EMAIL_HERE'; // ← update this to your email
 
 const CENTRAL_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
@@ -152,13 +152,11 @@ async function saveFirebaseConfig() {
   try {
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('No config object found — paste the full firebaseConfig block');
-    const cleaned = match[0]
-      .replace(/\/\/.*/g, '')        // strip line comments
-      .replace(/,\s*([\}\]])/g, '$1') // trailing commas
-      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // quote bare keys
-    config = JSON.parse(cleaned);
-    if (!config.apiKey)       throw new Error('apiKey is missing');
-    if (!config.databaseURL)  throw new Error('databaseURL is missing — make sure Realtime Database is enabled');
+    // Evaluate as a JS object literal (handles the format Firebase Console gives you)
+    config = new Function('return (' + match[0] + ')')();
+    if (!config || typeof config !== 'object') throw new Error('Could not parse config');
+    if (!config.apiKey)      throw new Error('apiKey is missing');
+    if (!config.databaseURL) throw new Error('databaseURL is missing — make sure Realtime Database is enabled');
   } catch(e) {
     toast('Invalid config: ' + e.message);
     btn.disabled = false; btn.textContent = 'Connect';
