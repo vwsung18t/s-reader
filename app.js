@@ -18,7 +18,7 @@ const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify
 let centralAuth, centralDb, userDb;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'sungchoi@gmail.com'; // ← update this to your email
+let ADMIN_EMAIL = null; // loaded from Firebase at runtime — set config/adminEmail in your DB
 
 const CENTRAL_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
@@ -47,6 +47,10 @@ function initFirebase() {
       : firebase.initializeApp(CENTRAL_CONFIG);
     centralAuth = firebase.auth(centralApp);
     centralDb   = firebase.database(centralApp);
+
+    // Fetch admin email from DB so it's never in source code
+    const configSnap = await centralDb.ref('config/adminEmail').once('value');
+    ADMIN_EMAIL = configSnap.val();
 
     centralAuth.onAuthStateChanged(async user => {
       if (user) {
