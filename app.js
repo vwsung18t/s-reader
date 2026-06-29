@@ -40,7 +40,7 @@ function showScreen(id) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-function initFirebase() {
+async function initFirebase() {
   try {
     const centralApp = firebase.apps.length
       ? firebase.apps[0]
