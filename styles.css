@@ -28,6 +28,12 @@ a { color: #7aabf7; }
 .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 .google-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
+/* ── ADMIN TABS ── */
+.admin-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #2a2a2a; padding-bottom: 8px; }
+.admin-tab { background: #1a1a1a; border: 1px solid #2e2e2e; color: #888; font-size: 12px; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; transition: all 0.1s; }
+.admin-tab:hover { background: #222; color: #ccc; }
+.admin-tab.active { background: #2a5fb8; color: #fff; border-color: #2a5fb8; }
+
 /* ── ADMIN PANEL ── */
 .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .admin-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; border-bottom: 1px solid #2a2a2a; }

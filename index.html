@@ -15,11 +15,82 @@
 <div id="screen-signin" class="full-screen">
   <div class="center-card" style="text-align:center;max-width:360px">
     <h1 style="margin-bottom:8px">📰 S Reader</h1>
-    <p class="subtitle">Sign in to sync your feeds across devices.</p>
+    <p class="subtitle">Sign in to get started.</p>
     <button class="btn primary google" onclick="signIn()" style="width:100%;justify-content:center">
       <svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
       Sign in with Google
     </button>
+  </div>
+</div>
+
+<!-- ══ REQUEST ACCESS ══ -->
+<div id="screen-request" class="full-screen hidden">
+  <div class="center-card" style="max-width:420px">
+    <h1 style="margin-bottom:6px">📰 S Reader</h1>
+    <p class="subtitle">Request access to get started.</p>
+    <div class="field">
+      <label>Your Name</label>
+      <input type="text" id="req-name" placeholder="Jane Smith">
+    </div>
+    <div class="field">
+      <label>Why do you want access?</label>
+      <textarea id="req-reason" placeholder="Tell us a bit about how you plan to use S Reader…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="signOut()">Cancel</button>
+      <button class="btn primary" id="btn-submit-request" onclick="submitAccessRequest()">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PENDING APPROVAL ══ -->
+<div id="screen-pending" class="full-screen hidden">
+  <div class="center-card" style="max-width:360px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">⏳</div>
+    <h1 style="margin-bottom:8px">Request Pending</h1>
+    <p class="subtitle" style="margin-bottom:24px">Your request has been submitted and is awaiting approval. Check back soon!</p>
+    <button class="btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ══ REJECTED ══ -->
+<div id="screen-rejected" class="full-screen hidden">
+  <div class="center-card" style="max-width:360px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🚫</div>
+    <h1 style="margin-bottom:8px">Access Denied</h1>
+    <p class="subtitle" style="margin-bottom:8px">Your request was not approved.</p>
+    <p id="rejected-reason" style="font-size:13px;color:#aaa;margin-bottom:24px"></p>
+    <button class="btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ══ FIREBASE SETUP ══ -->
+<div id="screen-firebase-setup" class="full-screen hidden">
+  <div class="center-card" style="max-width:520px">
+    <h1 style="margin-bottom:6px">📰 S Reader</h1>
+    <p class="subtitle">Connect your own Firebase to store your feeds and settings.</p>
+    <div class="field">
+      <label>Firebase Config</label>
+      <textarea id="fbs-config" style="min-height:180px;font-family:monospace;font-size:12px" placeholder="Paste your Firebase config here, e.g.:
+
+const firebaseConfig = {
+  apiKey: &quot;AIzaSy...&quot;,
+  authDomain: &quot;your-app.firebaseapp.com&quot;,
+  databaseURL: &quot;https://your-app-default-rtdb.firebaseio.com&quot;,
+  projectId: &quot;your-app&quot;,
+  storageBucket: &quot;your-app.appspot.com&quot;,
+  messagingSenderId: &quot;123456789&quot;,
+  appId: &quot;1:123...&quot;
+};"></textarea>
+      <div class="hint">
+        Get this from <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> → Project Settings → Your apps → Web app config.<br>
+        Make sure <strong>Realtime Database</strong> is enabled and your rules allow read/write for authenticated users.
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="signOut()">Sign out</button>
+      <button class="btn primary" id="btn-save-firebase-config" onclick="saveFirebaseConfig()">Connect</button>
+    </div>
   </div>
 </div>
 
@@ -35,7 +106,7 @@
       <div id="user-email"></div>
       <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
         <button class="btn" style="font-size:11px;padding:3px 8px;background:#222;border-color:#333;color:#aaa" onclick="signOut()">Sign out</button>
-        <button class="btn" id="btn-admin" style="font-size:11px;padding:3px 8px;background:#222;border-color:#333;color:#aaa;display:none" onclick="openAdminPanel()">👥 Visitors</button>
+        <button class="btn" id="btn-admin" style="font-size:11px;padding:3px 8px;background:#222;border-color:#333;color:#aaa;display:none" onclick="openAdminPanel()">👥 Admin</button>
       </div>
     </div>
     <div id="sidebar-actions">
@@ -127,7 +198,7 @@
     <div class="field">
       <label>Claude API Key</label>
       <input type="password" id="si-apikey" placeholder="sk-ant-...">
-      <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored in Firebase.</div>
+      <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored in your Firebase.</div>
     </div>
     <div class="field">
       <label>Global AI Filter Rule</label>
@@ -148,10 +219,45 @@
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — smarter, slower</option>
       </select>
     </div>
+    <div style="border-top:1px solid #2a2a2a;margin-top:16px;padding-top:16px">
+      <button class="btn" onclick="changeFirebaseConfig()">🔄 Change Firebase Config</button>
+    </div>
     <div class="btn-row">
       <button class="btn" onclick="closeOverlay('overlay-settings')">Cancel</button>
       <button class="btn primary" onclick="applySettings()">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADMIN ══ -->
+<div class="overlay" id="overlay-admin">
+  <div class="modal admin-modal">
+    <h2>Admin Panel</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="pending"  onclick="switchAdminTab('pending')">Pending Requests</button>
+      <button class="admin-tab"        data-tab="visitors" onclick="switchAdminTab('visitors')">Visitors</button>
+    </div>
+
+    <div id="admin-panel-pending">
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th>User</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="admin-pending-body"><tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="admin-panel-visitors" style="display:none">
+      <div id="admin-stats" style="margin-bottom:16px"></div>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th>User</th><th>Location</th><th>Visits</th><th>Last seen</th><th>First seen</th></tr></thead>
+          <tbody id="admin-visitors-body"><tr><td colspan="5" style="color:#555;text-align:center;padding:24px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="btn-row"><button class="btn primary" onclick="closeOverlay('overlay-admin')">Close</button></div>
   </div>
 </div>
 
@@ -190,21 +296,6 @@
       </div>
     </div>
     <div class="btn-row"><button class="btn primary" onclick="closeOverlay('overlay-shortcuts')">Close</button></div>
-  </div>
-</div>
-
-<!-- ══ MODAL: ADMIN ══ -->
-<div class="overlay" id="overlay-admin">
-  <div class="modal admin-modal">
-    <h2>👥 Visitors</h2>
-    <div id="admin-stats" style="margin-bottom:16px"></div>
-    <div style="overflow-x:auto">
-      <table class="admin-table">
-        <thead><tr><th>User</th><th>Location</th><th>Visits</th><th>Last seen</th><th>First seen</th></tr></thead>
-        <tbody id="admin-table-body"><tr><td colspan="5" style="color:#555;text-align:center;padding:24px">Loading…</td></tr></tbody>
-      </table>
-    </div>
-    <div class="btn-row"><button class="btn primary" onclick="closeOverlay('overlay-admin')">Close</button></div>
   </div>
 </div>
 

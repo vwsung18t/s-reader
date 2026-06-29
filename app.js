@@ -5,30 +5,22 @@ const PAGE_SIZE = 20;
 // ── STATE ─────────────────────────────────────────────────────
 const S = {
   user: null,
-  folders: [],
-  feeds: [],
+  folders: [], feeds: [],
   settings: { apiKey: '', globalFilter: '', filterAction: 'mark', model: 'claude-haiku-4-5-20251001' },
-  articles: {},
-  decisions: {},
-  read: new Set(),
-  currentFeed: 'all',
-  editingFeedId: null,
-  editingFolderId: null,
-  currentArticles: [],
-  displayedCount: 0,
-  scrollObserver: null,
-  focusedIndex: -1
+  articles: {}, decisions: {}, read: new Set(),
+  currentFeed: 'all', editingFeedId: null, editingFolderId: null,
+  currentArticles: [], displayedCount: 0, scrollObserver: null, focusedIndex: -1
 };
 
 const collapsed = new Set(JSON.parse(localStorage.getItem('rss.collapsed') || '[]'));
 const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify([...collapsed]));
 
-let auth, db;
+let centralAuth, centralDb, userDb;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'sungchoi@gmail.com';
+const ADMIN_EMAIL = 'YOUR_EMAIL_HERE'; // ← update this to your email
 
-const FIREBASE_CONFIG = {
+const CENTRAL_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
   authDomain: "fir-reader-5f8bc.firebaseapp.com",
   databaseURL: "https://fir-reader-5f8bc-default-rtdb.firebaseio.com",
@@ -39,29 +31,161 @@ const FIREBASE_CONFIG = {
   measurementId: "G-BFCCRH5ZS7"
 };
 
+// ── SCREEN MANAGEMENT ─────────────────────────────────────────
+const SCREENS = ['screen-signin','screen-request','screen-pending','screen-rejected','screen-firebase-setup','app'];
+
+function showScreen(id) {
+  SCREENS.forEach(s => document.getElementById(s)?.classList.add('hidden'));
+  document.getElementById(id)?.classList.remove('hidden');
+}
+
+// ── INIT ──────────────────────────────────────────────────────
 function initFirebase() {
   try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    auth = firebase.auth();
-    db   = firebase.database();
-    auth.onAuthStateChanged(async user => {
+    const centralApp = firebase.apps.length
+      ? firebase.apps[0]
+      : firebase.initializeApp(CENTRAL_CONFIG);
+    centralAuth = firebase.auth(centralApp);
+    centralDb   = firebase.database(centralApp);
+
+    centralAuth.onAuthStateChanged(async user => {
       if (user) {
         S.user = user;
         document.getElementById('user-email').textContent = user.email || user.displayName || 'Signed in';
         if (user.email === ADMIN_EMAIL) document.getElementById('btn-admin').style.display = '';
-        hide('screen-signin'); show('app');
-        await loadFromFirebase();
         recordAnalytics(user);
+        await checkApprovalStatus(user);
       } else {
-        S.user = null; hide('app'); show('screen-signin');
+        S.user = null;
+        showScreen('screen-signin');
       }
     });
   } catch(e) { toast('Firebase error: ' + e.message); }
 }
 
+// ── APPROVAL FLOW ─────────────────────────────────────────────
+async function checkApprovalStatus(user) {
+  // Admin skips approval check
+  if (user.email === ADMIN_EMAIL) {
+    await loadOrPromptFirebaseConfig(user);
+    return;
+  }
+
+  try {
+    const snap = await centralDb.ref(`approvals/${user.uid}`).once('value');
+    const approval = snap.val();
+
+    if (!approval) {
+      // Pre-fill name from Google account
+      document.getElementById('req-name').value = user.displayName || '';
+      showScreen('screen-request');
+    } else if (approval.status === 'pending') {
+      showScreen('screen-pending');
+    } else if (approval.status === 'rejected') {
+      document.getElementById('rejected-reason').textContent = approval.rejectReason || '';
+      showScreen('screen-rejected');
+    } else if (approval.status === 'approved') {
+      await loadOrPromptFirebaseConfig(user);
+    }
+  } catch(e) {
+    toast('Error checking approval: ' + e.message);
+  }
+}
+
+async function loadOrPromptFirebaseConfig(user) {
+  const snap = await centralDb.ref(`users/${user.uid}/ownFirebaseConfig`).once('value');
+  const config = snap.val();
+  if (!config) {
+    showScreen('screen-firebase-setup');
+  } else {
+    await initUserFirebase(config);
+  }
+}
+
+async function submitAccessRequest() {
+  const name   = document.getElementById('req-name').value.trim();
+  const reason = document.getElementById('req-reason').value.trim();
+  if (!name)              { toast('Please enter your name'); return; }
+  if (reason.length < 10) { toast('Please write at least a sentence about why you want access'); return; }
+
+  const btn = document.getElementById('btn-submit-request');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    await centralDb.ref(`approvals/${S.user.uid}`).set({
+      email:       S.user.email || '',
+      name,
+      displayName: S.user.displayName || '',
+      photoURL:    S.user.photoURL   || '',
+      reason,
+      requestedAt: Date.now(),
+      status:      'pending'
+    });
+    showScreen('screen-pending');
+  } catch(e) {
+    toast('Error submitting request: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Submit Request';
+  }
+}
+
+async function initUserFirebase(config) {
+  try {
+    const existing = firebase.apps.find(a => a.name === 'userApp');
+    if (existing) await existing.delete();
+    const userApp = firebase.initializeApp(config, 'userApp');
+    userDb = firebase.database(userApp);
+    showScreen('app');
+    await loadFromFirebase();
+    startAutoRefresh();
+  } catch(e) {
+    toast('Could not connect to your Firebase: ' + e.message);
+    showScreen('screen-firebase-setup');
+  }
+}
+
+async function saveFirebaseConfig() {
+  const raw = document.getElementById('fbs-config').value.trim();
+  const btn = document.getElementById('btn-save-firebase-config');
+  btn.disabled = true; btn.textContent = 'Connecting…';
+
+  let config;
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No config object found — paste the full firebaseConfig block');
+    const cleaned = match[0]
+      .replace(/\/\/.*/g, '')        // strip line comments
+      .replace(/,\s*([\}\]])/g, '$1') // trailing commas
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // quote bare keys
+    config = JSON.parse(cleaned);
+    if (!config.apiKey)       throw new Error('apiKey is missing');
+    if (!config.databaseURL)  throw new Error('databaseURL is missing — make sure Realtime Database is enabled');
+  } catch(e) {
+    toast('Invalid config: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Connect';
+    return;
+  }
+
+  try {
+    await centralDb.ref(`users/${S.user.uid}/ownFirebaseConfig`).set(config);
+    await initUserFirebase(config);
+  } catch(e) {
+    toast('Error: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Connect';
+  }
+}
+
+function changeFirebaseConfig() {
+  closeOverlay('overlay-settings');
+  document.getElementById('fbs-config').value = '';
+  document.getElementById('btn-save-firebase-config').disabled = false;
+  document.getElementById('btn-save-firebase-config').textContent = 'Connect';
+  showScreen('screen-firebase-setup');
+}
+
+// ── ANALYTICS ─────────────────────────────────────────────────
 async function recordAnalytics(user) {
   try {
-    const ref = db.ref(`analytics/${user.uid}`);
+    const ref = centralDb.ref(`analytics/${user.uid}`);
     const snap = await ref.once('value');
     const prev = snap.val() || {};
     let location = prev.location || null;
@@ -86,33 +210,88 @@ async function recordAnalytics(user) {
   } catch(_) {}
 }
 
+// ── ADMIN PANEL ───────────────────────────────────────────────
 async function openAdminPanel() {
   toggleUserMenu();
   openOverlay('overlay-admin');
-  const tbody = document.getElementById('admin-table-body');
+  switchAdminTab('pending');
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('admin-panel-pending').style.display  = tab === 'pending'  ? '' : 'none';
+  document.getElementById('admin-panel-visitors').style.display = tab === 'visitors' ? '' : 'none';
+  if (tab === 'pending')  loadPendingRequests();
+  if (tab === 'visitors') loadVisitorStats();
+}
+
+async function loadPendingRequests() {
+  const tbody = document.getElementById('admin-pending-body');
+  tbody.innerHTML = '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Loading…</td></tr>';
+  try {
+    const snap = await centralDb.ref('approvals').once('value');
+    const data = snap.val() || {};
+    const all  = Object.entries(data).sort((a, b) => (b[1].requestedAt||0) - (a[1].requestedAt||0));
+    if (!all.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">No requests yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = all.map(([uid, r]) => {
+      const avatar = r.photoURL ? `<img class="admin-avatar" src="${esc(r.photoURL)}" onerror="this.remove()">` : '';
+      const badge = { pending:'<span style="color:#b08830">⏳ Pending</span>', approved:'<span style="color:#4a8a4a">✓ Approved</span>', rejected:'<span style="color:#c06060">✗ Rejected</span>' }[r.status] || r.status;
+      const actions = r.status === 'pending'
+        ? `<button class="btn" style="font-size:11px;padding:3px 8px;color:#4a8a4a;border-color:#2a4a2a;background:#1a2a1a" onclick="approveUser('${uid}')">Approve</button>
+           <button class="btn" style="font-size:11px;padding:3px 8px;color:#c06060;border-color:#4a2020;background:#2a1010;margin-left:4px" onclick="rejectUser('${uid}')">Reject</button>`
+        : '';
+      return `<tr>
+        <td>${avatar}<strong>${esc(r.name||r.displayName||'—')}</strong><span class="admin-email">${esc(r.email||'')}</span></td>
+        <td style="max-width:220px;color:#aaa;font-size:12px">${esc(r.reason||'')}</td>
+        <td>${badge}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4" style="color:#c06060;padding:24px">Error: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function approveUser(uid) {
+  await centralDb.ref(`approvals/${uid}`).update({ status: 'approved', reviewedAt: Date.now() });
+  toast('User approved');
+  loadPendingRequests();
+}
+
+async function rejectUser(uid) {
+  const reason = prompt('Reason for rejection (optional):') || '';
+  await centralDb.ref(`approvals/${uid}`).update({ status: 'rejected', rejectReason: reason, reviewedAt: Date.now() });
+  toast('User rejected');
+  loadPendingRequests();
+}
+
+async function loadVisitorStats() {
+  const tbody   = document.getElementById('admin-visitors-body');
   const statsEl = document.getElementById('admin-stats');
   tbody.innerHTML = '<tr><td colspan="5" style="color:#555;text-align:center;padding:24px">Loading…</td></tr>';
   try {
-    const snap = await db.ref('analytics').once('value');
-    const data = snap.val() || {};
-    const users = Object.values(data).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-    const totalVisits = users.reduce((s, u) => s + (u.visitCount || 0), 0);
+    const snap  = await centralDb.ref('analytics').once('value');
+    const data  = snap.val() || {};
+    const users = Object.values(data).sort((a, b) => (b.lastSeen||0) - (a.lastSeen||0));
+    const totalVisits = users.reduce((s, u) => s + (u.visitCount||0), 0);
     statsEl.innerHTML = `
       <span class="admin-stat"><span class="admin-stat-num">${users.length}</span><span class="admin-stat-label">Total users</span></span>
-      <span class="admin-stat"><span class="admin-stat-num">${totalVisits}</span><span class="admin-stat-label">Total visits</span></span>
-    `;
+      <span class="admin-stat"><span class="admin-stat-num">${totalVisits}</span><span class="admin-stat-label">Total visits</span></span>`;
     if (!users.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="color:#555;text-align:center;padding:24px">No visitors yet</td></tr>';
       return;
     }
     tbody.innerHTML = users.map(u => {
       const avatar = u.photoURL ? `<img class="admin-avatar" src="${esc(u.photoURL)}" onerror="this.remove()">` : '';
-      const loc = u.location ? [u.location.city, u.location.region, u.location.country].filter(Boolean).join(', ') : '—';
+      const loc = u.location ? [u.location.city,u.location.region,u.location.country].filter(Boolean).join(', ') : '—';
       const ip  = u.location?.ip ? `<span class="admin-email">${esc(u.location.ip)}</span>` : '';
       return `<tr>
-        <td>${avatar}<strong>${esc(u.name || '—')}</strong><span class="admin-email">${esc(u.email || '')}</span></td>
+        <td>${avatar}<strong>${esc(u.name||'—')}</strong><span class="admin-email">${esc(u.email||'')}</span></td>
         <td>${esc(loc)}${ip}</td>
-        <td>${u.visitCount || 0}</td>
+        <td>${u.visitCount||0}</td>
         <td>${u.lastSeen ? relDate(new Date(u.lastSeen).toISOString()) : '—'}</td>
         <td>${u.firstSeen ? relDate(new Date(u.firstSeen).toISOString()) : '—'}</td>
       </tr>`;
@@ -123,10 +302,10 @@ async function openAdminPanel() {
 }
 
 async function signIn() {
-  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  try { await centralAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
   catch(e) { if (e.code !== 'auth/popup-closed-by-user') toast('Sign-in failed: ' + e.message); }
 }
-async function signOut() { await auth.signOut(); toast('Signed out'); }
+async function signOut() { await centralAuth.signOut(); toast('Signed out'); }
 function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
 // ── FIREBASE DATA ─────────────────────────────────────────────
@@ -143,7 +322,7 @@ function startAutoRefresh() {
 }
 
 async function loadFromFirebase() {
-  const snap = await db.ref(`users/${S.user.uid}`).once('value');
+  const snap = await userDb.ref(`users/${S.user.uid}`).once('value');
   const data = snap.val() || {};
   if (data.settings) S.settings = { ...S.settings, ...data.settings };
   S.folders   = data.folders   ? Object.values(data.folders)   : [];
@@ -156,10 +335,9 @@ async function loadFromFirebase() {
     await Promise.all(S.feeds.map(f => fetchFeed(f)));
     renderSidebar(); renderArticles();
   }
-  startAutoRefresh();
 }
 
-const fbRef        = path => db.ref(`users/${S.user.uid}/${path}`);
+const fbRef        = path => userDb.ref(`users/${S.user.uid}/${path}`);
 const saveFeeds    = () => { const o = {}; S.feeds.forEach(f => { o[f.id] = f; }); return fbRef('feeds').set(Object.keys(o).length ? o : null); };
 const saveFolders  = () => { const o = {}; S.folders.forEach(f => { o[f.id] = f; }); return fbRef('folders').set(Object.keys(o).length ? o : null); };
 const saveSettings = () => fbRef('settings').set(S.settings);
@@ -167,7 +345,7 @@ const markReadDB   = id => fbRef(`read/${id}`).set(true);
 const saveDecsBatch = map => {
   const u = {};
   Object.entries(map).forEach(([id, d]) => { u[`users/${S.user.uid}/decisions/${id}`] = d; });
-  return db.ref().update(u);
+  return userDb.ref().update(u);
 };
 
 // ── RSS FETCHING ──────────────────────────────────────────────
@@ -212,9 +390,7 @@ async function fetchFeed(feed) {
   const start = proxyCache[feed.id] ?? 0;
   const order = [...Array(PROXIES.length).keys()].map(i => (i + start) % PROXIES.length);
   for (const i of order) {
-    try {
-      if (await PROXIES[i](feed)) { proxyCache[feed.id] = i; return; }
-    } catch(_) {}
+    try { if (await PROXIES[i](feed)) { proxyCache[feed.id] = i; return; } } catch(_) {}
   }
   toast('⚠ Could not load: ' + (feed.name || feed.url));
 }
@@ -238,12 +414,12 @@ function normalize(raw, feed, idx) {
   const id = makeId(feed.id, raw.guid || raw.link || String(idx));
   return {
     id, feedId: feed.id, feedName: feed.name || feed.url,
-    title:       raw.title        || 'Untitled',
-    link:        raw.link         || raw.url || '',
-    pubDate:     raw.pubDate      || raw.published || raw.updated || '',
+    title:       raw.title       || 'Untitled',
+    link:        raw.link        || raw.url || '',
+    pubDate:     raw.pubDate     || raw.published || raw.updated || '',
     description: stripHtml(raw.description || raw.summary || '').slice(0, 300),
-    content:     raw.content      || raw.description || '',
-    author:      raw.author       || '',
+    content:     raw.content     || raw.description || '',
+    author:      raw.author      || '',
     image:       extractImage(raw) || null
   };
 }
@@ -259,26 +435,20 @@ function parseXML(xmlStr, feed) {
       const mediaUrl =
         e.querySelector('media\\:thumbnail')?.getAttribute('url') ||
         e.querySelector('media\\:content')?.getAttribute('url')   ||
-        (() => { const enc = e.querySelector('enclosure'); return (enc && /image/i.test(enc.getAttribute('type') || '')) ? enc.getAttribute('url') : null; })() ||
+        (() => { const enc = e.querySelector('enclosure'); return (enc && /image/i.test(enc.getAttribute('type')||'')) ? enc.getAttribute('url') : null; })() ||
         null;
       const raw = isAtom ? {
-        guid:        e.querySelector('id')?.textContent,
-        link:        e.querySelector('link')?.getAttribute('href'),
-        title:       e.querySelector('title')?.textContent,
-        pubDate:     e.querySelector('published,updated')?.textContent,
-        description: e.querySelector('summary,content')?.textContent,
-        content:     e.querySelector('content')?.innerHTML,
-        author:      e.querySelector('author name')?.textContent,
-        mediaUrl
+        guid: e.querySelector('id')?.textContent, link: e.querySelector('link')?.getAttribute('href'),
+        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('published,updated')?.textContent,
+        description: e.querySelector('summary,content')?.textContent, content: e.querySelector('content')?.innerHTML,
+        author: e.querySelector('author name')?.textContent, mediaUrl
       } : {
-        guid:        e.querySelector('guid')?.textContent,
-        link:        e.querySelector('link')?.textContent,
-        title:       e.querySelector('title')?.textContent,
-        pubDate:     e.querySelector('pubDate')?.textContent,
+        guid: e.querySelector('guid')?.textContent, link: e.querySelector('link')?.textContent,
+        title: e.querySelector('title')?.textContent, pubDate: e.querySelector('pubDate')?.textContent,
         description: e.querySelector('description')?.textContent,
-        content:     e.querySelector('content\\:encoded,encoded')?.textContent || e.querySelector('description')?.textContent,
-        author:      e.querySelector('author,dc\\:creator,creator')?.textContent,
-        enclosure:   { url: e.querySelector('enclosure')?.getAttribute('url'), type: e.querySelector('enclosure')?.getAttribute('type') },
+        content: e.querySelector('content\\:encoded,encoded')?.textContent || e.querySelector('description')?.textContent,
+        author: e.querySelector('author,dc\\:creator,creator')?.textContent,
+        enclosure: { url: e.querySelector('enclosure')?.getAttribute('url'), type: e.querySelector('enclosure')?.getAttribute('type') },
         mediaUrl
       };
       return normalize(raw, feed, i);
@@ -286,9 +456,7 @@ function parseXML(xmlStr, feed) {
   } catch { return null; }
 }
 
-function makeId(feedId, raw) {
-  return feedId + '_' + btoa(encodeURIComponent(String(raw || ''))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
-}
+function makeId(feedId, raw) { return feedId + '_' + btoa(encodeURIComponent(String(raw||''))).replace(/[^a-zA-Z0-9]/g,'').slice(0,32); }
 function stripHtml(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
 
 // ── SIDEBAR ───────────────────────────────────────────────────
@@ -300,17 +468,13 @@ function renderSidebar() {
   badge.textContent = allUnread;
   badge.classList.toggle('hidden', allUnread === 0);
   document.querySelector('[data-id="all"]').classList.toggle('active', S.currentFeed === 'all');
-
   [...list.querySelectorAll('li:not([data-id="all"]), li.folder-section')].forEach(el => el.remove());
-
   S.feeds.filter(f => !f.folderId).forEach(feed => list.appendChild(makeFeedLi(feed, false)));
-
   S.folders.forEach(folder => {
     const folderFeeds  = S.feeds.filter(f => f.folderId === folder.id);
-    const folderUnread = folderFeeds.flatMap(f => S.articles[f.id] || []).filter(a => !S.read.has(a.id)).length;
+    const folderUnread = folderFeeds.flatMap(f => S.articles[f.id]||[]).filter(a => !S.read.has(a.id)).length;
     const isCollapsed  = collapsed.has(folder.id);
     const isActive     = S.currentFeed === `folder:${folder.id}`;
-
     const header = document.createElement('li');
     header.className = 'folder-header' + (isActive ? ' active' : '');
     header.innerHTML = `
@@ -322,23 +486,15 @@ function renderSidebar() {
         <button title="Delete" onclick="event.stopPropagation();deleteFolder('${folder.id}')">🗑</button>
       </span>`;
     header.addEventListener('click', e => { if (e.target.closest('.folder-btns')) return; selectFeed(`folder:${folder.id}`); });
-
     const feedsWrap = document.createElement('li');
     feedsWrap.style.cssText = isCollapsed ? 'display:none' : '';
     feedsWrap.dataset.folderFeeds = folder.id;
-
     const toggleCollapse = () => {
-      if (collapsed.has(folder.id)) {
-        collapsed.delete(folder.id); feedsWrap.style.display = '';
-        header.querySelector('.folder-arrow').classList.add('open');
-      } else {
-        collapsed.add(folder.id); feedsWrap.style.display = 'none';
-        header.querySelector('.folder-arrow').classList.remove('open');
-      }
+      if (collapsed.has(folder.id)) { collapsed.delete(folder.id); feedsWrap.style.display=''; header.querySelector('.folder-arrow').classList.add('open'); }
+      else { collapsed.add(folder.id); feedsWrap.style.display='none'; header.querySelector('.folder-arrow').classList.remove('open'); }
       saveCollapsed();
     };
     header.querySelector('.folder-arrow').addEventListener('click', e => { e.stopPropagation(); toggleCollapse(); });
-
     const innerUl = document.createElement('ul');
     innerUl.style.listStyle = 'none';
     folderFeeds.forEach(feed => innerUl.appendChild(makeFeedLi(feed, true)));
@@ -355,7 +511,7 @@ function makeFeedLi(feed, nested) {
   li.className = (nested ? 'folder-feed-item' : 'feed-item') + (S.currentFeed === feed.id ? ' active' : '');
   li.dataset.id = feed.id;
   li.innerHTML = `
-    <span class="feed-title" title="${esc(feed.url)}">${esc(feed.name || feed.url)}</span>
+    <span class="feed-title" title="${esc(feed.url)}">${esc(feed.name||feed.url)}</span>
     ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
     <span class="feed-btns">
       <button title="Edit"   onclick="event.stopPropagation();openEditFeed('${feed.id}')">✏️</button>
@@ -366,38 +522,31 @@ function makeFeedLi(feed, nested) {
 }
 
 // ── ARTICLES ─────────────────────────────────────────────────
-function allArticles() {
-  return S.feeds.flatMap(f => S.articles[f.id] || []).sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
-}
+function allArticles() { return S.feeds.flatMap(f => S.articles[f.id]||[]).sort((a,b) => new Date(b.pubDate||0)-new Date(a.pubDate||0)); }
 
 function visibleArticles() {
   let feedIds;
   if (S.currentFeed === 'all') feedIds = S.feeds.map(f => f.id);
-  else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); feedIds = S.feeds.filter(f => f.folderId === fid).map(f => f.id); }
+  else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); feedIds = S.feeds.filter(f => f.folderId===fid).map(f => f.id); }
   else feedIds = [S.currentFeed];
-
   const oldest = document.getElementById('sort-order')?.value === 'oldest';
-  let list = feedIds.flatMap(id => S.articles[id] || []).sort((a, b) => {
-    const diff = new Date(a.pubDate || 0) - new Date(b.pubDate || 0);
-    return oldest ? diff : -diff;
-  });
+  let list = feedIds.flatMap(id => S.articles[id]||[]).sort((a,b) => { const diff=new Date(a.pubDate||0)-new Date(b.pubDate||0); return oldest?diff:-diff; });
   if (document.getElementById('chk-hide-read')?.checked) list = list.filter(a => !S.read.has(a.id));
-  if (!document.getElementById('chk-show-filtered')?.checked && S.settings.filterAction === 'hide')
-    list = list.filter(a => { const d = S.decisions[a.id]; return !d || d.keep !== false; });
+  if (!document.getElementById('chk-show-filtered')?.checked && S.settings.filterAction==='hide')
+    list = list.filter(a => { const d=S.decisions[a.id]; return !d||d.keep!==false; });
   return list;
 }
 
 function renderArticles() {
   if (S.scrollObserver) { S.scrollObserver.disconnect(); S.scrollObserver = null; }
   S.currentArticles = visibleArticles();
-  S.displayedCount  = 0;
-  S.focusedIndex    = -1;
+  S.displayedCount  = 0; S.focusedIndex = -1;
   const container = document.getElementById('article-list');
-  if (S.currentArticles.length === 0 && S.feeds.length === 0) {
+  if (S.currentArticles.length===0 && S.feeds.length===0) {
     container.innerHTML = `<div class="empty-state"><h3>No feeds yet</h3><p>Add a feed to get started.</p><button class="btn primary" onclick="openAddFeed()">+ Add Feed</button></div>`;
     return;
   }
-  if (S.currentArticles.length === 0) {
+  if (S.currentArticles.length===0) {
     container.innerHTML = `<div class="empty-state"><h3>Nothing to show</h3><p>Try refreshing or adjusting the filter options.</p></div>`;
     return;
   }
@@ -413,25 +562,22 @@ function appendBatch() {
   S.displayedCount += batch.length;
   if (S.displayedCount < S.currentArticles.length) {
     const s = document.createElement('div');
-    s.id = 'scroll-sentinel'; s.className = 'scroll-sentinel';
+    s.id='scroll-sentinel'; s.className='scroll-sentinel';
     s.innerHTML = `<span class="spin"></span> Loading…`;
     container.appendChild(s);
-    S.scrollObserver = new IntersectionObserver(entries => { if (entries[0].isIntersecting) appendBatch(); }, { rootMargin: '400px' });
+    S.scrollObserver = new IntersectionObserver(entries => { if (entries[0].isIntersecting) appendBatch(); }, { rootMargin:'400px' });
     S.scrollObserver.observe(s);
   } else if (S.displayedCount > 0) {
     const end = document.createElement('div');
     end.className = 'list-end';
-    end.textContent = `${S.currentArticles.length} article${S.currentArticles.length !== 1 ? 's' : ''}`;
+    end.textContent = `${S.currentArticles.length} article${S.currentArticles.length!==1?'s':''}`;
     container.appendChild(end);
   }
 }
 
 function createArticleEl(a) {
   const el = document.createElement('div');
-  el.className = 'article-item'
-    + (!S.read.has(a.id) ? ' unread' : '')
-    + (S.decisions[a.id]?.keep === false ? ' ai-filtered' : '')
-    + (a.image ? ' has-thumb' : '');
+  el.className = 'article-item' + (!S.read.has(a.id)?' unread':'') + (S.decisions[a.id]?.keep===false?' ai-filtered':'') + (a.image?' has-thumb':'');
   el.dataset.id = a.id;
   el.innerHTML = articleHTML(a);
   return el;
@@ -442,15 +588,13 @@ function articleHTML(a) {
   let meta = `<span class="tag tag-source">${esc(a.feedName)}</span>`;
   if (a.pubDate) meta += `<span>${relDate(a.pubDate)}</span>`;
   if (a.author)  meta += `<span>${esc(a.author)}</span>`;
-  if (dec?.keep === false) meta += `<span class="tag tag-filtered" title="${esc(dec.reason||'')}">🚫 filtered</span>`;
+  if (dec?.keep===false) meta += `<span class="tag tag-filtered" title="${esc(dec.reason||'')}">🚫 filtered</span>`;
   else if (!dec && hasFilterRule(a.feedId)) meta += `<span class="tag tag-pending">⏳ unfiltered</span>`;
-
   const thumb = a.image ? `<img class="article-thumb" src="${esc(a.image)}" loading="lazy" onerror="this.style.display='none'" alt="">` : '';
   const body = sanitize(a.content) || (a.description ? `<p>${esc(a.description)}</p>` : '');
   const titleEl = a.link
     ? `<a class="article-title-link" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" onclick="markArticleReadById('${esc(a.id)}')">${esc(a.title)}</a>`
     : `<span class="article-title-link">${esc(a.title)}</span>`;
-
   return `<div class="article-layout">
     ${thumb}
     <div class="article-content">
@@ -479,8 +623,8 @@ function markArticleReadById(id) {
 
 // ── KEYBOARD NAVIGATION ───────────────────────────────────────
 function focusArticle(idx) {
-  if (S.currentArticles.length === 0) return;
-  idx = Math.max(0, Math.min(idx, S.currentArticles.length - 1));
+  if (S.currentArticles.length===0) return;
+  idx = Math.max(0, Math.min(idx, S.currentArticles.length-1));
   while (idx >= S.displayedCount && S.displayedCount < S.currentArticles.length) appendBatch();
   S.focusedIndex = idx;
   const art = S.currentArticles[idx];
@@ -497,7 +641,7 @@ function getSidebarItems() {
   S.feeds.filter(f => !f.folderId).forEach(f => items.push(f.id));
   S.folders.forEach(folder => {
     items.push(`folder:${folder.id}`);
-    S.feeds.filter(f => f.folderId === folder.id).forEach(f => items.push(f.id));
+    S.feeds.filter(f => f.folderId===folder.id).forEach(f => items.push(f.id));
   });
   return items;
 }
@@ -508,7 +652,7 @@ async function markAllRead() {
   toMark.forEach(a => S.read.add(a.id));
   const u = {};
   toMark.forEach(a => { u[`users/${S.user.uid}/read/${a.id}`] = true; });
-  await db.ref().update(u);
+  await userDb.ref().update(u);
   renderSidebar(); renderArticles();
   toast(`Marked ${toMark.length} as read`);
 }
@@ -516,85 +660,42 @@ async function markAllRead() {
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); }
 
-// ── KEYBOARD SHORTCUTS ────────────────────────────────────────
 let gPending = false, gTimer = null;
 
 document.addEventListener('keydown', e => {
   const navKeys = new Set(['j','k','n','p','o','v','m','r','a','?','h',' ']);
   if (navKeys.has(e.key) && ['SELECT','BUTTON'].includes(e.target.tagName)) e.target.blur();
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
   if (document.querySelector('.overlay.open')) {
-    if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+    if (e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
     return;
   }
-
-  const list = document.getElementById('article-list');
-
-  if (gPending) {
-    clearTimeout(gTimer); gPending = false;
-    if (e.key === 'a') selectFeed('all');
-    return;
-  }
-  if (e.key === 'g' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-    gPending = true;
-    gTimer = setTimeout(() => { gPending = false; }, 1000);
-    return;
-  }
-
-  switch(true) {
-    case (e.key === 'j' || e.key === 'n') && !e.shiftKey:
-      e.preventDefault(); focusArticle(S.focusedIndex + 1); break;
-    case (e.key === 'k' || e.key === 'p') && !e.shiftKey:
-      e.preventDefault(); focusArticle(S.focusedIndex - 1); break;
-    case (e.key === 'o' || e.key === 'v') && !e.shiftKey: {
-      if (S.focusedIndex < 0) break;
-      const art = S.currentArticles[S.focusedIndex];
-      if (art?.link) window.open(art.link, '_blank', 'noopener');
-      break;
+  if (!document.getElementById('app').classList.contains('hidden')) {
+    const list = document.getElementById('article-list');
+    if (gPending) { clearTimeout(gTimer); gPending=false; if (e.key==='a') selectFeed('all'); return; }
+    if (e.key==='g' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { gPending=true; gTimer=setTimeout(()=>{gPending=false;},1000); return; }
+    switch(true) {
+      case (e.key==='j'||e.key==='n')&&!e.shiftKey: e.preventDefault(); focusArticle(S.focusedIndex+1); break;
+      case (e.key==='k'||e.key==='p')&&!e.shiftKey: e.preventDefault(); focusArticle(S.focusedIndex-1); break;
+      case (e.key==='o'||e.key==='v')&&!e.shiftKey: { if(S.focusedIndex<0) break; const art=S.currentArticles[S.focusedIndex]; if(art?.link) window.open(art.link,'_blank','noopener'); break; }
+      case e.key==='m'&&!e.shiftKey: {
+        if(S.focusedIndex<0) break;
+        const art=S.currentArticles[S.focusedIndex]; const el=document.querySelector(`.article-item[data-id="${art.id}"]`); if(!el) break;
+        if(S.read.has(art.id)) { S.read.delete(art.id); el.classList.add('unread'); fbRef(`read/${art.id}`).remove(); renderSidebar(); } else markArticleRead(el);
+        break;
+      }
+      case e.key===' '&&!e.shiftKey: e.preventDefault(); list.scrollBy({top:list.clientHeight*0.8,behavior:'smooth'}); break;
+      case e.key===' '&&e.shiftKey:  e.preventDefault(); list.scrollBy({top:-list.clientHeight*0.8,behavior:'smooth'}); break;
+      case e.key==='A'&&e.shiftKey:  e.preventDefault(); markAllRead(); break;
+      case (e.key==='J'||e.key==='N')&&e.shiftKey: { e.preventDefault(); const items=getSidebarItems(),idx=items.indexOf(S.currentFeed); if(idx<items.length-1) selectFeed(items[idx+1]); break; }
+      case (e.key==='K'||e.key==='P')&&e.shiftKey: { e.preventDefault(); const items=getSidebarItems(),idx=items.indexOf(S.currentFeed); if(idx>0) selectFeed(items[idx-1]); break; }
+      case e.key==='X'&&e.shiftKey: { if(!S.currentFeed.startsWith('folder:')) break; collapsed.add(S.currentFeed.slice(7)); saveCollapsed(); renderSidebar(); break; }
+      case e.key==='C'&&e.shiftKey: S.folders.forEach(f=>collapsed.add(f.id)); saveCollapsed(); renderSidebar(); break;
+      case e.key==='E'&&e.shiftKey: collapsed.clear(); saveCollapsed(); renderSidebar(); break;
+      case e.key==='r'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey: refreshFeeds(); break;
+      case e.key==='a'&&!e.shiftKey: openAddFeed(); break;
+      case e.key==='?'||(e.key==='h'&&!e.shiftKey): openOverlay('overlay-shortcuts'); break;
     }
-    case e.key === 'm' && !e.shiftKey: {
-      if (S.focusedIndex < 0) break;
-      const art = S.currentArticles[S.focusedIndex];
-      const el  = document.querySelector(`.article-item[data-id="${art.id}"]`);
-      if (!el) break;
-      if (S.read.has(art.id)) {
-        S.read.delete(art.id); el.classList.add('unread');
-        fbRef(`read/${art.id}`).remove(); renderSidebar();
-      } else { markArticleRead(el); }
-      break;
-    }
-    case e.key === ' ' && !e.shiftKey:
-      e.preventDefault(); list.scrollBy({ top: list.clientHeight * 0.8, behavior: 'smooth' }); break;
-    case e.key === ' ' && e.shiftKey:
-      e.preventDefault(); list.scrollBy({ top: -list.clientHeight * 0.8, behavior: 'smooth' }); break;
-    case e.key === 'A' && e.shiftKey:
-      e.preventDefault(); markAllRead(); break;
-    case (e.key === 'J' || e.key === 'N') && e.shiftKey: {
-      e.preventDefault();
-      const items = getSidebarItems(), idx = items.indexOf(S.currentFeed);
-      if (idx < items.length - 1) selectFeed(items[idx + 1]);
-      break;
-    }
-    case (e.key === 'K' || e.key === 'P') && e.shiftKey: {
-      e.preventDefault();
-      const items = getSidebarItems(), idx = items.indexOf(S.currentFeed);
-      if (idx > 0) selectFeed(items[idx - 1]);
-      break;
-    }
-    case e.key === 'X' && e.shiftKey: {
-      if (!S.currentFeed.startsWith('folder:')) break;
-      collapsed.add(S.currentFeed.slice(7)); saveCollapsed(); renderSidebar(); break;
-    }
-    case e.key === 'C' && e.shiftKey:
-      S.folders.forEach(f => collapsed.add(f.id)); saveCollapsed(); renderSidebar(); break;
-    case e.key === 'E' && e.shiftKey:
-      collapsed.clear(); saveCollapsed(); renderSidebar(); break;
-    case e.key === 'r' && !e.shiftKey && !e.ctrlKey && !e.metaKey:
-      refreshFeeds(); break;
-    case e.key === 'a' && !e.shiftKey:
-      openAddFeed(); break;
-    case e.key === '?' || (e.key === 'h' && !e.shiftKey):
-      openOverlay('overlay-shortcuts'); break;
   }
 });
 
@@ -607,10 +708,8 @@ function openAddFolder() {
   openOverlay('overlay-folder');
   setTimeout(() => document.getElementById('folder-name-input').focus(), 60);
 }
-
 function openEditFolder(folderId) {
-  const folder = S.folders.find(f => f.id === folderId);
-  if (!folder) return;
+  const folder = S.folders.find(f => f.id===folderId); if(!folder) return;
   S.editingFolderId = folderId;
   document.getElementById('folder-modal-title').textContent = 'Rename Folder';
   document.getElementById('btn-save-folder').textContent = 'Save';
@@ -618,28 +717,20 @@ function openEditFolder(folderId) {
   openOverlay('overlay-folder');
   setTimeout(() => document.getElementById('folder-name-input').focus(), 60);
 }
-
 async function saveFolder() {
   const name = document.getElementById('folder-name-input').value.trim();
   if (!name) { toast('Please enter a folder name'); return; }
-  if (S.editingFolderId) {
-    const folder = S.folders.find(f => f.id === S.editingFolderId);
-    if (folder) folder.name = name;
-  } else {
-    S.folders.push({ id: 'folder_' + Date.now(), name });
-  }
-  await saveFolders();
-  closeOverlay('overlay-folder');
-  renderSidebar();
+  if (S.editingFolderId) { const folder=S.folders.find(f=>f.id===S.editingFolderId); if(folder) folder.name=name; }
+  else S.folders.push({ id:'folder_'+Date.now(), name });
+  await saveFolders(); closeOverlay('overlay-folder'); renderSidebar();
   toast(S.editingFolderId ? 'Folder renamed' : 'Folder created!');
 }
-
 async function deleteFolder(folderId) {
   if (!confirm('Delete this folder? Feeds will become uncategorized.')) return;
-  S.feeds.forEach(f => { if (f.folderId === folderId) delete f.folderId; });
-  S.folders = S.folders.filter(f => f.id !== folderId);
+  S.feeds.forEach(f => { if(f.folderId===folderId) delete f.folderId; });
+  S.folders = S.folders.filter(f => f.id!==folderId);
   await Promise.all([saveFolders(), saveFeeds()]);
-  if (S.currentFeed === `folder:${folderId}`) selectFeed('all');
+  if (S.currentFeed===`folder:${folderId}`) selectFeed('all');
   else { renderSidebar(); renderArticles(); }
 }
 
@@ -647,14 +738,8 @@ async function deleteFolder(folderId) {
 function populateFolderDropdown(selectedId) {
   const sel = document.getElementById('fi-folder');
   sel.innerHTML = '<option value="">— No folder —</option>';
-  S.folders.forEach(f => {
-    const o = document.createElement('option');
-    o.value = f.id; o.textContent = f.name;
-    if (f.id === selectedId) o.selected = true;
-    sel.appendChild(o);
-  });
+  S.folders.forEach(f => { const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; if(f.id===selectedId) o.selected=true; sel.appendChild(o); });
 }
-
 function openAddFeed() {
   S.editingFeedId = null;
   document.getElementById('feed-modal-title').textContent = 'Add Feed';
@@ -666,220 +751,154 @@ function openAddFeed() {
   openOverlay('overlay-feed');
   setTimeout(() => document.getElementById('fi-url').focus(), 60);
 }
-
 function openEditFeed(feedId) {
-  const feed = S.feeds.find(f => f.id === feedId);
-  if (!feed) return;
+  const feed = S.feeds.find(f => f.id===feedId); if(!feed) return;
   S.editingFeedId = feedId;
   document.getElementById('feed-modal-title').textContent = 'Edit Feed';
   document.getElementById('btn-save-feed').textContent = 'Save';
   document.getElementById('fi-url').value    = feed.url;
-  document.getElementById('fi-name').value   = feed.name       || '';
-  document.getElementById('fi-filter').value = feed.filterRule || '';
-  populateFolderDropdown(feed.folderId || '');
+  document.getElementById('fi-name').value   = feed.name||'';
+  document.getElementById('fi-filter').value = feed.filterRule||'';
+  populateFolderDropdown(feed.folderId||'');
   openOverlay('overlay-feed');
 }
-
 async function saveFeed() {
   const url        = document.getElementById('fi-url').value.trim();
   if (!url) { toast('Please enter a feed URL'); return; }
-  const name       = document.getElementById('fi-name').value.trim()   || null;
-  const filterRule = document.getElementById('fi-filter').value.trim() || null;
-  const folderId   = document.getElementById('fi-folder').value         || null;
-
+  const name       = document.getElementById('fi-name').value.trim()||null;
+  const filterRule = document.getElementById('fi-filter').value.trim()||null;
+  const folderId   = document.getElementById('fi-folder').value||null;
   if (S.editingFeedId) {
-    const feed = S.feeds.find(f => f.id === S.editingFeedId);
+    const feed = S.feeds.find(f => f.id===S.editingFeedId);
     if (feed) Object.assign(feed, { url, name, filterRule, folderId });
-    await saveFeeds();
-    closeOverlay('overlay-feed');
-    renderSidebar(); renderArticles();
+    await saveFeeds(); closeOverlay('overlay-feed'); renderSidebar(); renderArticles();
   } else {
-    const feed = { id: 'f' + Date.now(), url, name, filterRule, folderId };
-    S.feeds.push(feed);
-    await saveFeeds();
-    closeOverlay('overlay-feed');
-    setRefreshBusy(true);
-    await fetchFeed(feed);
-    setRefreshBusy(false);
-    renderSidebar(); renderArticles();
-    toast('Feed added!');
+    const feed = { id:'f'+Date.now(), url, name, filterRule, folderId };
+    S.feeds.push(feed); await saveFeeds(); closeOverlay('overlay-feed');
+    setRefreshBusy(true); await fetchFeed(feed); setRefreshBusy(false);
+    renderSidebar(); renderArticles(); toast('Feed added!');
   }
 }
-
 async function deleteFeed(feedId) {
   if (!confirm('Remove this feed?')) return;
-  S.feeds = S.feeds.filter(f => f.id !== feedId);
-  delete S.articles[feedId];
+  S.feeds = S.feeds.filter(f => f.id!==feedId); delete S.articles[feedId];
   await saveFeeds();
-  if (S.currentFeed === feedId) selectFeed('all');
+  if (S.currentFeed===feedId) selectFeed('all');
   else { renderSidebar(); renderArticles(); }
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────
 function openSettings() {
-  document.getElementById('si-apikey').value = S.settings.apiKey       || '';
-  document.getElementById('si-filter').value = S.settings.globalFilter || '';
-  document.getElementById('si-action').value = S.settings.filterAction || 'mark';
-  document.getElementById('si-model').value  = S.settings.model        || 'claude-haiku-4-5-20251001';
+  document.getElementById('si-apikey').value = S.settings.apiKey||'';
+  document.getElementById('si-filter').value = S.settings.globalFilter||'';
+  document.getElementById('si-action').value = S.settings.filterAction||'mark';
+  document.getElementById('si-model').value  = S.settings.model||'claude-haiku-4-5-20251001';
   openOverlay('overlay-settings');
 }
-
 async function applySettings() {
   S.settings.apiKey       = document.getElementById('si-apikey').value.trim();
   S.settings.globalFilter = document.getElementById('si-filter').value.trim();
   S.settings.filterAction = document.getElementById('si-action').value;
   S.settings.model        = document.getElementById('si-model').value;
-  await saveSettings();
-  closeOverlay('overlay-settings');
-  renderArticles();
-  toast('Settings saved');
+  await saveSettings(); closeOverlay('overlay-settings'); renderArticles(); toast('Settings saved');
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function selectFeed(feedId) {
   S.currentFeed = feedId;
   let name = 'All Items';
-  if (feedId.startsWith('folder:'))  name = S.folders.find(f => f.id === feedId.slice(7))?.name || 'Folder';
-  else if (feedId !== 'all')         name = S.feeds.find(f => f.id === feedId)?.name || 'Feed';
+  if (feedId.startsWith('folder:'))  name = S.folders.find(f=>f.id===feedId.slice(7))?.name||'Folder';
+  else if (feedId!=='all')           name = S.feeds.find(f=>f.id===feedId)?.name||'Feed';
   document.getElementById('current-feed-name').textContent = name;
   renderSidebar(); renderArticles();
   if (window.innerWidth <= 700) closeSidebar();
 }
-
 async function refreshFeeds() {
   let toRefresh;
-  if (S.currentFeed === 'all') toRefresh = S.feeds;
-  else if (S.currentFeed.startsWith('folder:')) { const fid = S.currentFeed.slice(7); toRefresh = S.feeds.filter(f => f.folderId === fid); }
-  else toRefresh = S.feeds.filter(f => f.id === S.currentFeed);
+  if (S.currentFeed==='all') toRefresh=S.feeds;
+  else if (S.currentFeed.startsWith('folder:')) { const fid=S.currentFeed.slice(7); toRefresh=S.feeds.filter(f=>f.folderId===fid); }
+  else toRefresh=S.feeds.filter(f=>f.id===S.currentFeed);
   if (!toRefresh.length) { toast('No feeds to refresh'); return; }
   setRefreshBusy(true);
-  await Promise.all(toRefresh.map(f => fetchFeed(f)));
-  setRefreshBusy(false);
-  renderSidebar(); renderArticles();
-  toast('Refreshed');
+  await Promise.all(toRefresh.map(f=>fetchFeed(f)));
+  setRefreshBusy(false); renderSidebar(); renderArticles(); toast('Refreshed');
 }
-
-function setRefreshBusy(v) {
-  const btn = document.getElementById('btn-refresh');
-  btn.disabled = v; btn.textContent = v ? '↻ Loading…' : '↻ Refresh';
-}
+function setRefreshBusy(v) { const btn=document.getElementById('btn-refresh'); btn.disabled=v; btn.textContent=v?'↻ Loading…':'↻ Refresh'; }
 
 // ── AI FILTERING ──────────────────────────────────────────────
 function hasFilterRule(feedId) {
   if (S.settings.globalFilter) return true;
-  return !!(S.feeds.find(f => f.id === feedId)?.filterRule);
+  return !!(S.feeds.find(f=>f.id===feedId)?.filterRule);
 }
-
 async function runAIFilter() {
   if (!S.settings.apiKey) { toast('Add a Claude API key in ⚙ Settings first'); openSettings(); return; }
   const toFilter = visibleArticles().filter(a => hasFilterRule(a.feedId) && !S.decisions[a.id]);
   if (!toFilter.length) { toast('All visible articles already have a filter decision'); return; }
-  const btn = document.getElementById('btn-filter');
-  btn.disabled = true; btn.textContent = '⏳ Filtering…';
-  const statusEl = document.getElementById('filter-status');
-  statusEl.classList.remove('hidden');
-  const groups = {};
-  toFilter.forEach(a => {
-    const feed = S.feeds.find(f => f.id === a.feedId);
-    const rule = feed?.filterRule || S.settings.globalFilter;
-    (groups[rule] = groups[rule] || []).push(a);
-  });
-  let done = 0; const total = toFilter.length; const FBATCH = 15;
+  const btn=document.getElementById('btn-filter'); btn.disabled=true; btn.textContent='⏳ Filtering…';
+  const statusEl=document.getElementById('filter-status'); statusEl.classList.remove('hidden');
+  const groups={};
+  toFilter.forEach(a => { const feed=S.feeds.find(f=>f.id===a.feedId); const rule=feed?.filterRule||S.settings.globalFilter; (groups[rule]=groups[rule]||[]).push(a); });
+  let done=0; const total=toFilter.length; const FBATCH=15;
   try {
-    for (const [rule, arts] of Object.entries(groups)) {
-      for (let i = 0; i < arts.length; i += FBATCH) {
-        const batch = arts.slice(i, i + FBATCH);
-        statusEl.textContent = `🤖 Filtering ${done + batch.length} / ${total}…`;
-        const results = await callClaude(batch, rule);
-        const newDec = {};
-        results.forEach(r => { S.decisions[r.id] = { keep: r.keep, reason: r.reason || '' }; newDec[r.id] = S.decisions[r.id]; });
-        done += batch.length;
-        await saveDecsBatch(newDec);
-        renderArticles();
+    for (const [rule,arts] of Object.entries(groups)) {
+      for (let i=0; i<arts.length; i+=FBATCH) {
+        const batch=arts.slice(i,i+FBATCH);
+        statusEl.textContent=`🤖 Filtering ${done+batch.length} / ${total}…`;
+        const results=await callClaude(batch,rule); const newDec={};
+        results.forEach(r => { S.decisions[r.id]={keep:r.keep,reason:r.reason||''}; newDec[r.id]=S.decisions[r.id]; });
+        done+=batch.length; await saveDecsBatch(newDec); renderArticles();
       }
     }
-    statusEl.textContent = `✅ Done — ${done} article${done !== 1 ? 's' : ''} evaluated`;
-    setTimeout(() => statusEl.classList.add('hidden'), 3500);
+    statusEl.textContent=`✅ Done — ${done} article${done!==1?'s':''} evaluated`;
+    setTimeout(()=>statusEl.classList.add('hidden'),3500);
   } catch(err) {
-    statusEl.textContent = `❌ ${err.message}`;
-    setTimeout(() => statusEl.classList.add('hidden'), 6000);
-    toast('Filter error: ' + err.message);
+    statusEl.textContent=`❌ ${err.message}`; setTimeout(()=>statusEl.classList.add('hidden'),6000); toast('Filter error: '+err.message);
   }
-  btn.disabled = false; btn.textContent = '🤖 AI Filter';
+  btn.disabled=false; btn.textContent='🤖 AI Filter';
 }
-
-async function callClaude(articles, rule) {
-  const body = articles.map(a => `ID: ${a.id}\nTitle: ${a.title}\nSummary: ${a.description}`).join('\n\n---\n\n');
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': S.settings.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: S.settings.model,
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: `You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]` }]
-    })
+async function callClaude(articles,rule) {
+  const body=articles.map(a=>`ID: ${a.id}\nTitle: ${a.title}\nSummary: ${a.description}`).join('\n\n---\n\n');
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':S.settings.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:S.settings.model,max_tokens:2048,messages:[{role:'user',content:`You are a content filter for an RSS reader.\nFilter rule: "${rule}"\n\nFor each article decide KEEP (true) or FILTER (false).\nReturn ONLY a JSON array — no prose, no markdown.\n\n${body}\n\nFormat: [{"id":"...","keep":true,"reason":"one sentence"}]`}]})
   });
-  if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
-  const data = await resp.json();
-  const match = (data.content?.[0]?.text || '').match(/\[[\s\S]*\]/);
+  if (!resp.ok) { const e=await resp.json().catch(()=>({})); throw new Error(e.error?.message||`HTTP ${resp.status}`); }
+  const data=await resp.json();
+  const match=(data.content?.[0]?.text||'').match(/\[[\s\S]*\]/);
   if (!match) throw new Error('Unexpected AI response format');
   return JSON.parse(match[0]);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────
-function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function relDate(str) {
   if (!str) return '';
   try {
-    const diff = Date.now() - new Date(str);
-    if (diff < 60000)     return 'just now';
-    if (diff < 3600000)   return `${Math.floor(diff/60000)}m ago`;
-    if (diff < 86400000)  return `${Math.floor(diff/3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff/86400000)}d ago`;
+    const diff=Date.now()-new Date(str);
+    if (diff<60000)    return 'just now';
+    if (diff<3600000)  return `${Math.floor(diff/60000)}m ago`;
+    if (diff<86400000) return `${Math.floor(diff/3600000)}h ago`;
+    if (diff<604800000)return `${Math.floor(diff/86400000)}d ago`;
     return new Date(str).toLocaleDateString();
   } catch { return ''; }
 }
-
 function sanitize(html) {
   if (!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  if (tmp.children.length === 0 && html.includes('&lt;')) {
-    const dec = document.createElement('textarea');
-    dec.innerHTML = html;
-    tmp.innerHTML = dec.value;
-  }
-  tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
-  tmp.querySelectorAll('*').forEach(el => {
-    [...el.attributes].forEach(attr => {
-      if (/^on/i.test(attr.name) || (attr.name === 'href' && /^javascript:/i.test(attr.value)))
-        el.removeAttribute(attr.name);
-    });
-  });
+  const tmp=document.createElement('div'); tmp.innerHTML=html;
+  if (tmp.children.length===0 && html.includes('&lt;')) { const dec=document.createElement('textarea'); dec.innerHTML=html; tmp.innerHTML=dec.value; }
+  tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el=>el.remove());
+  tmp.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(attr=>{if(/^on/i.test(attr.name)||(attr.name==='href'&&/^javascript:/i.test(attr.value)))el.removeAttribute(attr.name);});});
   return tmp.innerHTML;
 }
-
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
-
-function toast(msg, ms = 3200) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.remove('hidden');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.add('hidden'), ms);
+function toast(msg,ms=3200) {
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.remove('hidden');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.add('hidden'),ms);
 }
+document.querySelectorAll('.overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});});
 
-document.querySelectorAll('.overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-
-// ── INIT ──────────────────────────────────────────────────────
 initFirebase();
