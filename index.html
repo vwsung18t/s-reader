@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S Reader</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ── SIGN-IN SCREEN ───────────────────────────────────────── -->
+<div id="screen-signin" class="fullscreen-center">
+  <div class="signin-card">
+    <h1 class="signin-logo">S Reader</h1>
+    <p class="signin-sub">Your personal RSS reader</p>
+    <button class="btn primary signin-btn" onclick="signIn()">Sign in with Google</button>
+  </div>
+</div>
+
+<!-- ── MAIN APP ─────────────────────────────────────────────── -->
+<div id="app" class="hidden">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span class="app-title">S Reader</span>
+      <button id="btn-add-folder" class="btn icon-btn" title="New Folder" onclick="openAddFolder()">📁+</button>
+      <button id="btn-add-feed"   class="btn icon-btn" title="Add Feed"   onclick="openAddFeed()">+</button>
+    </div>
+
+    <ul id="feed-list">
+      <li data-id="all" class="active" onclick="selectFeed('all')">
+        All Items
+        <span id="all-unread" class="unread-badge hidden"></span>
+      </li>
+    </ul>
+
+    <div id="sidebar-footer">
+      <button class="btn text-btn" onclick="openSettings()">⚙ Settings</button>
+      <div class="user-section">
+        <button id="btn-user" class="btn icon-btn user-btn" onclick="toggleUserMenu()" title="Account">👤</button>
+        <div id="user-menu" class="user-menu hidden">
+          <span id="user-email" class="user-email-label"></span>
+          <button id="btn-admin" class="btn text-btn" style="display:none" onclick="openAdminPanel()">📊 Admin</button>
+          <button class="btn text-btn" onclick="signOut()">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /sidebar -->
+
+  <!-- Main content -->
+  <div id="main">
+    <div id="toolbar">
+      <button id="btn-sidebar-toggle" class="btn icon-btn" title="Toggle sidebar" onclick="toggleSidebar()">☰</button>
+      <span id="current-feed-name">All Items</span>
+      <div class="toolbar-controls">
+        <label class="chk-label"><input type="checkbox" id="chk-hide-read" onchange="renderArticles()"> Hide read</label>
+        <label class="chk-label"><input type="checkbox" id="chk-show-filtered" onchange="renderArticles()"> Show filtered</label>
+        <select id="sort-order" onchange="renderArticles();this.blur()">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+        <button id="btn-mark-all" class="btn" onclick="markAllRead()">✓ Mark all read</button>
+        <button id="btn-filter" class="btn" onclick="runAIFilter()">🤖 AI Filter</button>
+        <button id="btn-refresh" class="btn" onclick="refreshFeeds()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div id="filter-status" class="hidden filter-status-bar"></div>
+
+    <div id="article-list"></div>
+  </div><!-- /main -->
+
+</div><!-- /app -->
+
+<!-- ── OVERLAYS ──────────────────────────────────────────────── -->
+
+<!-- Add/Edit Feed -->
+<div id="overlay-feed" class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="feed-modal-title">Add Feed</h2>
+      <button class="btn icon-btn modal-close" onclick="closeOverlay('overlay-feed')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>URL <input id="fi-url" type="url" placeholder="https://example.com/feed.xml" /></label>
+      <label>Name (optional) <input id="fi-name" type="text" placeholder="Leave blank to auto-detect" /></label>
+      <label>Filter rule (optional) <input id="fi-filter" type="text" placeholder="e.g. Only show AI news" /></label>
+      <label>Folder
+        <select id="fi-folder"></select>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('overlay-feed')">Cancel</button>
+      <button id="btn-save-feed" class="btn primary" onclick="saveFeed()">Add Feed</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Folder -->
+<div id="overlay-folder" class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="folder-modal-title">New Folder</h2>
+      <button class="btn icon-btn modal-close" onclick="closeOverlay('overlay-folder')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Name <input id="folder-name-input" type="text" placeholder="Folder name" /></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('overlay-folder')">Cancel</button>
+      <button id="btn-save-folder" class="btn primary" onclick="saveFolder()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="overlay-settings" class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Settings</h2>
+      <button class="btn icon-btn modal-close" onclick="closeOverlay('overlay-settings')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Claude API Key
+        <input id="si-apikey" type="password" placeholder="sk-ant-…" />
+      </label>
+      <label>Global filter rule
+        <input id="si-filter" type="text" placeholder="e.g. Only show AI and tech news" />
+      </label>
+      <label>Filter action
+        <select id="si-action">
+          <option value="mark">Mark filtered articles</option>
+          <option value="hide">Hide filtered articles</option>
+        </select>
+      </label>
+      <label>Model
+        <select id="si-model">
+          <option value="claude-haiku-4-5-20251001">Claude Haiku (fast)</option>
+          <option value="claude-sonnet-4-6">Claude Sonnet (balanced)</option>
+          <option value="claude-opus-4-8">Claude Opus (powerful)</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('overlay-settings')">Cancel</button>
+      <button class="btn primary" onclick="applySettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="overlay-admin" class="overlay">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>📊 Analytics</h2>
+      <button class="btn icon-btn modal-close" onclick="closeOverlay('overlay-admin')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="admin-stats" class="admin-stats-row"></div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Location</th>
+              <th>Visits</th>
+              <th>Last seen</th>
+              <th>First seen</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <tr><td colspan="5" style="text-align:center;color:#555;padding:24px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard Shortcuts -->
+<div id="overlay-shortcuts" class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Keyboard Shortcuts</h2>
+      <button class="btn icon-btn modal-close" onclick="closeOverlay('overlay-shortcuts')">✕</button>
+    </div>
+    <div class="modal-body shortcuts-body">
+      <table class="shortcuts-table">
+        <tbody>
+          <tr><td><kbd>j</kbd> / <kbd>n</kbd></td><td>Next article</td></tr>
+          <tr><td><kbd>k</kbd> / <kbd>p</kbd></td><td>Previous article</td></tr>
+          <tr><td><kbd>o</kbd> / <kbd>v</kbd></td><td>Open in new tab</td></tr>
+          <tr><td><kbd>m</kbd></td><td>Toggle read</td></tr>
+          <tr><td><kbd>Shift+A</kbd></td><td>Mark all read</td></tr>
+          <tr><td><kbd>r</kbd></td><td>Refresh feeds</td></tr>
+          <tr><td><kbd>a</kbd></td><td>Add feed</td></tr>
+          <tr><td><kbd>g</kbd> <kbd>a</kbd></td><td>Go to All Items</td></tr>
+          <tr><td><kbd>Shift+J</kbd> / <kbd>N</kbd></td><td>Next feed</td></tr>
+          <tr><td><kbd>Shift+K</kbd> / <kbd>P</kbd></td><td>Previous feed</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Scroll down</td></tr>
+          <tr><td><kbd>Shift+Space</kbd></td><td>Scroll up</td></tr>
+          <tr><td><kbd>?</kbd> / <kbd>h</kbd></td><td>Show shortcuts</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- ── FIREBASE SDK ───────────────────────────────────────────── -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
