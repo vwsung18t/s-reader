@@ -18,7 +18,7 @@ const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify
 let centralAuth, centralDb, userDb;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'sungchoi@gmail.com'; // ← update this to your email
+const ADMIN_EMAIL = 'YOUR_EMAIL_HERE'; // ← update this to your email
 
 const CENTRAL_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
@@ -65,9 +65,9 @@ function initFirebase() {
 
 // ── APPROVAL FLOW ─────────────────────────────────────────────
 async function checkApprovalStatus(user) {
-  // Admin skips approval check
+  // Admin skips approval and config — uses central Firebase directly
   if (user.email === ADMIN_EMAIL) {
-    await loadOrPromptFirebaseConfig(user);
+    await initUserFirebase(CENTRAL_CONFIG);
     return;
   }
 
