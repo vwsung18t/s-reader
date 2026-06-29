@@ -18,7 +18,7 @@ const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify
 let centralAuth, centralDb, userDb;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'YOUR_EMAIL_HERE'; // ← update this to your email
+const ADMIN_EMAIL = 'sungchoi@gmail.com'; // ← update this to your email
 
 const CENTRAL_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
