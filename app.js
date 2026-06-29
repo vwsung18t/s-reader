@@ -26,7 +26,7 @@ const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify
 let auth, db;
 
 // ── FIREBASE ─────────────────────────────────────────────────
-const ADMIN_EMAIL = 'schoi@awg.co';
+const ADMIN_EMAIL = 'sungchoi@gmail.com';
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAPEu6PjPCk7fQyomMKzfZfmhnaktz0Tn0",
