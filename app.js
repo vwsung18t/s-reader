@@ -319,7 +319,7 @@ function startAutoRefresh() {
   autoRefreshTimer = setInterval(async () => {
     if (!S.user || !S.feeds.length) return;
     await Promise.all(S.feeds.map(f => fetchFeed(f)));
-    renderSidebar(); renderArticles();
+    renderSidebar(); // update unread counts only — don't disrupt reading
   }, AUTO_REFRESH_MS);
 }
 
