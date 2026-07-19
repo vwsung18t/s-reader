@@ -417,9 +417,9 @@ async function fetchAllFeeds(feeds) {
 }
 
 // Fetch with a timeout so a hanging proxy doesn't block the cascade
-async function fetchTimeout(url, ms = 12000) {
+async function fetchTimeout(url, ms = 30000) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
+  const t = setTimeout(() => ctrl.abort(`timed out after ${ms}ms`), ms);
   try { return await fetch(url, { signal: ctrl.signal }); }
   finally { clearTimeout(t); }
 }
@@ -436,7 +436,7 @@ async function fetchFeed(feed) {
       errors.push(`proxy${i}: ${e.message}`);
     }
   }
-  console.warn(`Failed: ${feed.name || feed.url}`, errors);
+  console.warn(`Failed: ${feed.name || feed.url}\n  ` + errors.join('\n  '));
   delete proxyCache[feed.id]; // reset so next attempt starts fresh
   return false;
 }
