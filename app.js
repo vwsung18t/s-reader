@@ -1,5 +1,6 @@
 'use strict';
 
+const APP_VERSION = '1.4.0';
 const PAGE_SIZE = 20;
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -945,5 +946,9 @@ function toast(msg,ms=3200) {
   clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.add('hidden'),ms);
 }
 document.querySelectorAll('.overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});});
+
+// Show version in sidebar footer + console
+document.getElementById('app-version').textContent = 'v' + APP_VERSION;
+console.log('%cS Reader v' + APP_VERSION, 'color:#5a9cf8;font-weight:bold');
 
 initFirebase();

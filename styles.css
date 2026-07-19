@@ -68,6 +68,7 @@ a { color: #7aabf7; }
 .btn-side.cfg:hover  { background: #2a2a2a; color: #ccc; }
 
 #feed-list { list-style: none; overflow-y: auto; flex: 1; padding: 4px 0; }
+#app-version { padding: 6px 12px; font-size: 10px; color: #3a3a3a; border-top: 1px solid #202020; flex-shrink: 0; letter-spacing: 0.5px; }
 
 .feed-item { padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; border-left: 3px solid transparent; transition: background 0.1s; color: #888; }
 .feed-item:hover { background: rgba(255,255,255,0.04); color: #bbb; }
