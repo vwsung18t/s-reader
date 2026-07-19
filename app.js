@@ -318,7 +318,7 @@ function startAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   autoRefreshTimer = setInterval(async () => {
     if (!S.user || !S.feeds.length) return;
-    await Promise.all(S.feeds.map(f => fetchFeed(f)));
+    await fetchAllFeeds(S.feeds);
     renderSidebar(); // update unread counts only — don't disrupt reading
   }, AUTO_REFRESH_MS);
 }
@@ -334,7 +334,7 @@ async function loadFromFirebase() {
   renderSidebar();
   if (S.feeds.length > 0) {
     renderArticles();
-    await Promise.all(S.feeds.map(f => fetchFeed(f)));
+    await fetchAllFeeds(S.feeds);
     renderSidebar(); renderArticles();
   }
 }
@@ -387,6 +387,13 @@ const PROXIES = [
     applyParsed(p, feed); return true;
   },
 ];
+
+async function fetchAllFeeds(feeds) {
+  const CONCURRENCY = 4;
+  for (let i = 0; i < feeds.length; i += CONCURRENCY) {
+    await Promise.all(feeds.slice(i, i + CONCURRENCY).map(f => fetchFeed(f)));
+  }
+}
 
 async function fetchFeed(feed) {
   const start = proxyCache[feed.id] ?? 0;
@@ -777,7 +784,7 @@ async function saveFeed() {
   } else {
     const feed = { id:'f'+Date.now(), url, name, filterRule, folderId };
     S.feeds.push(feed); await saveFeeds(); closeOverlay('overlay-feed');
-    setRefreshBusy(true); await fetchFeed(feed); setRefreshBusy(false);
+    setRefreshBusy(true); await fetchAllFeeds([feed]); setRefreshBusy(false);
     renderSidebar(); renderArticles(); toast('Feed added!');
   }
 }
@@ -822,7 +829,7 @@ async function refreshFeeds() {
   else toRefresh=S.feeds.filter(f=>f.id===S.currentFeed);
   if (!toRefresh.length) { toast('No feeds to refresh'); return; }
   setRefreshBusy(true);
-  await Promise.all(toRefresh.map(f=>fetchFeed(f)));
+  await fetchAllFeeds(toRefresh);
   setRefreshBusy(false); renderSidebar(); renderArticles(); toast('Refreshed');
 }
 function setRefreshBusy(v) { const btn=document.getElementById('btn-refresh'); btn.disabled=v; btn.textContent=v?'↻ Loading…':'↻ Refresh'; }
