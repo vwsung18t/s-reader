@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.7.2';
+const APP_VERSION = '1.9.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -37,7 +37,7 @@ const CENTRAL_CONFIG = {
 };
 
 // ── SCREEN MANAGEMENT ─────────────────────────────────────────
-const SCREENS = ['screen-signin','screen-request','screen-pending','screen-rejected','screen-firebase-setup','app'];
+const SCREENS = ['screen-signin','screen-request','screen-pending','screen-rejected','app'];
 
 function showScreen(id) {
   SCREENS.forEach(s => document.getElementById(s)?.classList.add('hidden'));
@@ -93,7 +93,7 @@ async function initFirebase() {
 async function checkApprovalStatus(user) {
   // Admin skips approval and config — uses central Firebase directly
   if (user.email === ADMIN_EMAIL) {
-    await initUserFirebase(CENTRAL_CONFIG);
+    await initUserFirebase();
     return;
   }
 
@@ -111,20 +111,12 @@ async function checkApprovalStatus(user) {
       document.getElementById('rejected-reason').textContent = approval.rejectReason || '';
       showScreen('screen-rejected');
     } else if (approval.status === 'approved') {
-      await loadOrPromptFirebaseConfig(user);
+      // All approved users share the central database, isolated by the
+      // users/{uid} security rules.
+      await initUserFirebase();
     }
   } catch(e) {
     toast('Error checking approval: ' + e.message);
-  }
-}
-
-async function loadOrPromptFirebaseConfig(user) {
-  const snap = await centralDb.ref(`users/${user.uid}/ownFirebaseConfig`).once('value');
-  const config = snap.val();
-  if (!config) {
-    showScreen('screen-firebase-setup');
-  } else {
-    await initUserFirebase(config);
   }
 }
 
@@ -154,61 +146,19 @@ async function submitAccessRequest() {
   }
 }
 
-async function initUserFirebase(config) {
+// All users share the central database. Their data is isolated under
+// users/{uid} and enforced by the security rules — a second Firebase app is
+// never created, so the connection always carries the signed-in auth session.
+async function initUserFirebase() {
   try {
-    const existing = firebase.apps.find(a => a.name === 'userApp');
-    if (existing) await existing.delete();
-    const userApp = firebase.initializeApp(config, 'userApp');
-    userDb = firebase.database(userApp);
+    userDb = centralDb;
     showScreen('app');
     await loadFromFirebase();
     startAutoRefresh();
   } catch(e) {
-    console.error(
-      'initUserFirebase failed — falling back to the Firebase setup screen.\n' +
-      'This is why you are being asked for a config even if you are the admin.\n' +
-      'Error:', e
-    );
-    toast('Could not connect to your Firebase: ' + e.message);
-    showScreen('screen-firebase-setup');
+    console.error('Failed to load user data:', e);
+    toast('Could not load your data: ' + e.message);
   }
-}
-
-async function saveFirebaseConfig() {
-  const raw = document.getElementById('fbs-config').value.trim();
-  const btn = document.getElementById('btn-save-firebase-config');
-  btn.disabled = true; btn.textContent = 'Connecting…';
-
-  let config;
-  try {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No config object found — paste the full firebaseConfig block');
-    // Evaluate as a JS object literal (handles the format Firebase Console gives you)
-    config = new Function('return (' + match[0] + ')')();
-    if (!config || typeof config !== 'object') throw new Error('Could not parse config');
-    if (!config.apiKey)      throw new Error('apiKey is missing');
-    if (!config.databaseURL) throw new Error('databaseURL is missing — make sure Realtime Database is enabled');
-  } catch(e) {
-    toast('Invalid config: ' + e.message);
-    btn.disabled = false; btn.textContent = 'Connect';
-    return;
-  }
-
-  try {
-    await centralDb.ref(`users/${S.user.uid}/ownFirebaseConfig`).set(config);
-    await initUserFirebase(config);
-  } catch(e) {
-    toast('Error: ' + e.message);
-    btn.disabled = false; btn.textContent = 'Connect';
-  }
-}
-
-function changeFirebaseConfig() {
-  closeOverlay('overlay-settings');
-  document.getElementById('fbs-config').value = '';
-  document.getElementById('btn-save-firebase-config').disabled = false;
-  document.getElementById('btn-save-firebase-config').textContent = 'Connect';
-  showScreen('screen-firebase-setup');
 }
 
 // ── ANALYTICS ─────────────────────────────────────────────────

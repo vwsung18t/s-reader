@@ -64,36 +64,6 @@
   </div>
 </div>
 
-<!-- ══ FIREBASE SETUP ══ -->
-<div id="screen-firebase-setup" class="full-screen hidden">
-  <div class="center-card" style="max-width:520px">
-    <h1 style="margin-bottom:6px">📰 S Reader</h1>
-    <p class="subtitle">Connect your own Firebase to store your feeds and settings.</p>
-    <div class="field">
-      <label>Firebase Config</label>
-      <textarea id="fbs-config" style="min-height:180px;font-family:monospace;font-size:12px" placeholder="Paste your Firebase config here, e.g.:
-
-const firebaseConfig = {
-  apiKey: &quot;AIzaSy...&quot;,
-  authDomain: &quot;your-app.firebaseapp.com&quot;,
-  databaseURL: &quot;https://your-app-default-rtdb.firebaseio.com&quot;,
-  projectId: &quot;your-app&quot;,
-  storageBucket: &quot;your-app.appspot.com&quot;,
-  messagingSenderId: &quot;123456789&quot;,
-  appId: &quot;1:123...&quot;
-};"></textarea>
-      <div class="hint">
-        Get this from <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> → Project Settings → Your apps → Web app config.<br>
-        Make sure <strong>Realtime Database</strong> is enabled and your rules allow read/write for authenticated users.
-      </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn" onclick="signOut()">Sign out</button>
-      <button class="btn primary" id="btn-save-firebase-config" onclick="saveFirebaseConfig()">Connect</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ APP ══ -->
 <div id="app" class="hidden">
   <div id="sidebar">
@@ -219,9 +189,6 @@ const firebaseConfig = {
         <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest &amp; cheapest</option>
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — smarter, slower</option>
       </select>
-    </div>
-    <div style="border-top:1px solid #2a2a2a;margin-top:16px;padding-top:16px">
-      <button class="btn" onclick="changeFirebaseConfig()">🔄 Change Firebase Config</button>
     </div>
     <div class="btn-row">
       <button class="btn" onclick="closeOverlay('overlay-settings')">Cancel</button>
