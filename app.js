@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -54,13 +54,30 @@ async function initFirebase() {
     centralDb   = firebase.database(centralApp);
 
     // Fetch admin email from DB so it's never in source code
-    const configSnap = await centralDb.ref('config/adminEmail').once('value');
-    ADMIN_EMAIL = configSnap.val();
+    try {
+      const configSnap = await centralDb.ref('config/adminEmail').once('value');
+      ADMIN_EMAIL = configSnap.val();
+      if (!ADMIN_EMAIL) {
+        console.error(
+          'config/adminEmail is missing or empty in the database.\n' +
+          'Admin features will be unavailable and the admin will be treated as a normal user.\n' +
+          'Fix: Firebase Console -> Realtime Database -> Data -> add config/adminEmail = "your@email.com"'
+        );
+      } else {
+        console.log('Admin email loaded:', ADMIN_EMAIL);
+      }
+    } catch (e) {
+      console.error(
+        'Could not read config/adminEmail — check that your security rules allow public read on "config".\n',
+        e
+      );
+    }
 
     centralAuth.onAuthStateChanged(async user => {
       if (user) {
         S.user = user;
         document.getElementById('user-email').textContent = user.email || user.displayName || 'Signed in';
+        console.log('Signed in as:', user.email, '| admin match:', user.email === ADMIN_EMAIL);
         if (user.email === ADMIN_EMAIL) document.getElementById('btn-admin').style.display = '';
         recordAnalytics(user);
         await checkApprovalStatus(user);
