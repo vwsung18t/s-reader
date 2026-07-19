@@ -5,7 +5,7 @@ const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
 // Leave empty to fall back to the free public proxies only.
-const PROXY_WORKER_URL = '';
+const PROXY_WORKER_URL = 'https://morning-rice-8af9.sungchoi.workers.dev/';
 
 // ── STATE ─────────────────────────────────────────────────────
 const S = {
