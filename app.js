@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.7.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -518,7 +518,24 @@ function parseXML(xmlStr, feed) {
   } catch { return null; }
 }
 
-function makeId(feedId, raw) { return feedId + '_' + btoa(encodeURIComponent(String(raw||''))).replace(/[^a-zA-Z0-9]/g,'').slice(0,32); }
+// FNV-1a hash over the FULL string.
+// The old version base64'd the URL and kept the first 32 chars, which on any
+// single site is just the shared "https://www.domain.com/" prefix — so every
+// article in a feed produced an identical ID and shared one read-state.
+function hashString(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
+function makeId(feedId, raw) {
+  const s = String(raw || '');
+  // Two independent hashes (forward + reversed) to make collisions vanishingly unlikely
+  return feedId + '_' + hashString(s) + hashString([...s].reverse().join('')) + s.length.toString(36);
+}
 function stripHtml(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
 
 // ── SIDEBAR ───────────────────────────────────────────────────
