@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -490,7 +490,7 @@ function parseXML(xmlStr, feed) {
     // Detect Atom only by the ROOT element, not by any descendant named "feed".
     // Many RSS feeds include <atom:link> which was falsely matching before.
     const root = doc.documentElement;
-    const isAtom = root &amp;&amp; root.nodeName.toLowerCase().replace(/^.*:/, '') === 'feed';
+    const isAtom = !!root && root.nodeName.toLowerCase().replace(/^.*:/, '') === 'feed';
     const title  = (isAtom ? doc.querySelector('feed > title') : doc.querySelector('channel > title'))?.textContent || '';
     const nodes  = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
     return { title, items: nodes.map((e, i) => {
