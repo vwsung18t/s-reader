@@ -1,7 +1,11 @@
 'use strict';
 
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const PAGE_SIZE = 20;
+
+// Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
+// Leave empty to fall back to the free public proxies only.
+const PROXY_WORKER_URL = '';
 
 // ── STATE ─────────────────────────────────────────────────────
 const S = {
@@ -356,9 +360,10 @@ const enc = s => encodeURIComponent(s);
 const proxyCache = {};
 
 const PROXIES = [
-  // allorigins (raw) — most permissive, returns the feed body directly
+  // Your own Cloudflare Worker — no rate limits, no size caps. Skipped if unset.
   async (feed) => {
-    const r = await fetchTimeout(`https://api.allorigins.win/raw?url=${enc(feed.url)}`);
+    if (!PROXY_WORKER_URL) return false;
+    const r = await fetchTimeout(`${PROXY_WORKER_URL}?url=${enc(feed.url)}`);
     if (!r.ok) return false;
     const p = parseXML(await r.text(), feed);
     if (!p || !p.items.length) return false;
@@ -380,7 +385,15 @@ const PROXIES = [
     if (!p || !p.items.length) return false;
     applyParsed(p, feed); return true;
   },
-  // allorigins (JSON wrapper) — fallback if raw fails
+  // allorigins (raw) — currently unreliable (frequent 408/500), kept as fallback
+  async (feed) => {
+    const r = await fetchTimeout(`https://api.allorigins.win/raw?url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p || !p.items.length) return false;
+    applyParsed(p, feed); return true;
+  },
+  // allorigins (JSON wrapper)
   async (feed) => {
     const r = await fetchTimeout(`https://api.allorigins.win/get?url=${enc(feed.url)}`);
     if (!r.ok) return false;
