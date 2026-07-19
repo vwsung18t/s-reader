@@ -423,7 +423,7 @@ async function fetchAllFeeds(feeds) {
     results.forEach((ok, j) => { if (!ok) failed.push(chunk[j]); });
   }
   if (failed.length) {
-    console.warn('Feeds that failed to load:', failed.map(f => f.name || f.url));
+    console.warn('Feeds that failed to load: ' + failed.map(f => f.name || f.url).join(', '));
     toast(`⚠ ${failed.length} of ${feeds.length} feed${feeds.length!==1?'s':''} failed to load (see console)`, 5000);
   }
   return failed;
@@ -487,7 +487,10 @@ function parseXML(xmlStr, feed) {
   try {
     const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
     if (doc.querySelector('parsererror')) return null;
-    const isAtom = !!doc.querySelector('feed');
+    // Detect Atom only by the ROOT element, not by any descendant named "feed".
+    // Many RSS feeds include <atom:link> which was falsely matching before.
+    const root = doc.documentElement;
+    const isAtom = root &amp;&amp; root.nodeName.toLowerCase().replace(/^.*:/, '') === 'feed';
     const title  = (isAtom ? doc.querySelector('feed > title') : doc.querySelector('channel > title'))?.textContent || '';
     const nodes  = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
     return { title, items: nodes.map((e, i) => {
