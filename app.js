@@ -355,8 +355,42 @@ const enc = s => encodeURIComponent(s);
 const proxyCache = {};
 
 const PROXIES = [
+  // allorigins (raw) — most permissive, returns the feed body directly
   async (feed) => {
-    const r = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${enc(feed.url)}&count=50`);
+    const r = await fetchTimeout(`https://api.allorigins.win/raw?url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p || !p.items.length) return false;
+    applyParsed(p, feed); return true;
+  },
+  // corsproxy.io
+  async (feed) => {
+    const r = await fetchTimeout(`https://corsproxy.io/?url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p || !p.items.length) return false;
+    applyParsed(p, feed); return true;
+  },
+  // codetabs
+  async (feed) => {
+    const r = await fetchTimeout(`https://api.codetabs.com/v1/proxy?quest=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const p = parseXML(await r.text(), feed);
+    if (!p || !p.items.length) return false;
+    applyParsed(p, feed); return true;
+  },
+  // allorigins (JSON wrapper) — fallback if raw fails
+  async (feed) => {
+    const r = await fetchTimeout(`https://api.allorigins.win/get?url=${enc(feed.url)}`);
+    if (!r.ok) return false;
+    const d = await r.json();
+    const p = parseXML(d.contents, feed);
+    if (!p || !p.items.length) return false;
+    applyParsed(p, feed); return true;
+  },
+  // rss2json — heavily rate-limited on free tier, so last resort
+  async (feed) => {
+    const r = await fetchTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${enc(feed.url)}&count=50`);
     if (!r.ok) return false;
     const d = await r.json();
     if (d.status !== 'ok') return false;
@@ -364,44 +398,46 @@ const PROXIES = [
     S.articles[feed.id] = (d.items || []).map((item, i) => normalize(item, feed, i));
     return true;
   },
-  async (feed) => {
-    const r = await fetch(`https://corsproxy.io/?url=${enc(feed.url)}`);
-    if (!r.ok) return false;
-    const p = parseXML(await r.text(), feed);
-    if (!p) return false;
-    applyParsed(p, feed); return true;
-  },
-  async (feed) => {
-    const r = await fetch(`https://api.allorigins.win/get?disableCache=true&url=${enc(feed.url)}`);
-    if (!r.ok) return false;
-    const d = await r.json();
-    const p = parseXML(d.contents, feed);
-    if (!p) return false;
-    applyParsed(p, feed); return true;
-  },
-  async (feed) => {
-    const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${enc(feed.url)}`);
-    if (!r.ok) return false;
-    const p = parseXML(await r.text(), feed);
-    if (!p) return false;
-    applyParsed(p, feed); return true;
-  },
 ];
 
 async function fetchAllFeeds(feeds) {
   const CONCURRENCY = 4;
+  const failed = [];
   for (let i = 0; i < feeds.length; i += CONCURRENCY) {
-    await Promise.all(feeds.slice(i, i + CONCURRENCY).map(f => fetchFeed(f)));
+    const chunk = feeds.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(chunk.map(f => fetchFeed(f)));
+    results.forEach((ok, j) => { if (!ok) failed.push(chunk[j]); });
   }
+  if (failed.length) {
+    console.warn('Feeds that failed to load:', failed.map(f => f.name || f.url));
+    toast(`⚠ ${failed.length} of ${feeds.length} feed${feeds.length!==1?'s':''} failed to load (see console)`, 5000);
+  }
+  return failed;
+}
+
+// Fetch with a timeout so a hanging proxy doesn't block the cascade
+async function fetchTimeout(url, ms = 12000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
 }
 
 async function fetchFeed(feed) {
   const start = proxyCache[feed.id] ?? 0;
   const order = [...Array(PROXIES.length).keys()].map(i => (i + start) % PROXIES.length);
+  const errors = [];
   for (const i of order) {
-    try { if (await PROXIES[i](feed)) { proxyCache[feed.id] = i; return; } } catch(_) {}
+    try {
+      if (await PROXIES[i](feed)) { proxyCache[feed.id] = i; return true; }
+      errors.push(`proxy${i}: returned no data`);
+    } catch(e) {
+      errors.push(`proxy${i}: ${e.message}`);
+    }
   }
-  toast('⚠ Could not load: ' + (feed.name || feed.url));
+  console.warn(`Failed: ${feed.name || feed.url}`, errors);
+  delete proxyCache[feed.id]; // reset so next attempt starts fresh
+  return false;
 }
 
 function applyParsed(parsed, feed) {
