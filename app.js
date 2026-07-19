@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.2';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -164,6 +164,11 @@ async function initUserFirebase(config) {
     await loadFromFirebase();
     startAutoRefresh();
   } catch(e) {
+    console.error(
+      'initUserFirebase failed — falling back to the Firebase setup screen.\n' +
+      'This is why you are being asked for a config even if you are the admin.\n' +
+      'Error:', e
+    );
     toast('Could not connect to your Firebase: ' + e.message);
     showScreen('screen-firebase-setup');
   }
