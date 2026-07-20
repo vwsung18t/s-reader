@@ -130,11 +130,20 @@ a { color: #7aabf7; }
 
 /* ── PER-FEED LAYOUTS ── */
 
-/* Photo — large image on top, for image-heavy feeds */
-.article-item.layout-photo .article-layout { flex-direction: column; gap: 10px; }
+/* Photo — large image on top, for image-heavy feeds.
+   Width is capped rather than height: an earlier max-height fought the
+   aspect-ratio on wide screens and cropped images into a squat band. */
+.article-item.layout-photo .article-layout {
+  flex-direction: column;
+  gap: 10px;
+  max-width: 760px;   /* keeps the whole card in a readable column */
+}
 .article-item.layout-photo .article-thumb {
-  width: 100%; height: auto; max-height: 460px;
-  aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 8px;
 }
 .article-item.layout-photo .article-title-link { font-size: 18px; }
 
@@ -145,8 +154,8 @@ a { color: #7aabf7; }
 .article-item.layout-compact .article-title-link { font-size: 14px; }
 
 @media (max-width: 700px) {
-  /* On narrow screens the list layout already stacks, so match photo sizing */
-  .article-item.layout-photo .article-thumb { max-height: 300px; }
+  /* Narrow screens: let the card use the full width; aspect-ratio still governs height */
+  .article-item.layout-photo .article-layout { max-width: none; }
 }
 
 .article-body { margin-top: 8px; }
