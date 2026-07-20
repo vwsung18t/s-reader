@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.12.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -640,6 +640,18 @@ function createArticleEl(a) {
   return el;
 }
 
+// Derive a favicon URL for an article, preferring the article link's domain,
+// falling back to the feed URL. Uses Google's favicon service.
+function faviconFor(a) {
+  const feed = S.feeds.find(f => f.id === a.feedId);
+  const src = a.link || feed?.url || '';
+  try {
+    const host = new URL(src).hostname;
+    if (!host) return null;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`;
+  } catch { return null; }
+}
+
 function articleHTML(a) {
   const dec = S.decisions[a.id];
   let meta = `<span class="tag tag-source">${esc(a.feedName)}</span>`;
@@ -652,7 +664,12 @@ function articleHTML(a) {
   const titleEl = a.link
     ? `<a class="article-title-link" href="${esc(a.link)}" target="_blank" rel="noopener noreferrer" onclick="markArticleReadById('${esc(a.id)}')">${esc(a.title)}</a>`
     : `<span class="article-title-link">${esc(a.title)}</span>`;
+  const favUrl = faviconFor(a);
+  const favicon = favUrl
+    ? `<img class="article-favicon" src="${esc(favUrl)}" loading="lazy" onerror="this.style.display='none'" alt="" title="${esc(a.feedName)}">`
+    : '';
   return `<div class="article-layout">
+    ${favicon}
     ${thumb}
     <div class="article-content">
       <div class="article-title">${titleEl}</div>

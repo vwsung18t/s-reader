@@ -108,7 +108,16 @@ a { color: #7aabf7; }
 #article-list { flex: 1; overflow-y: auto; scroll-behavior: smooth; background: #111; }
 
 /* ── ARTICLES ── */
-.article-item { background: #1a1a1a; border-bottom: 1px solid #242424; padding: 12px 16px; border-left: 3px solid transparent; transition: background 0.1s; }
+.article-item { position: relative; background: #1a1a1a; border-bottom: 1px solid #242424; padding: 12px 16px; border-left: 3px solid transparent; transition: background 0.1s; }
+
+/* Feed site favicon, pinned to the top-right of each article */
+.article-favicon {
+  position: absolute; top: 12px; right: 14px;
+  width: 16px; height: 16px; border-radius: 3px;
+  opacity: 0.85; background: #222; flex-shrink: 0; z-index: 1;
+}
+/* Keep title text clear of the favicon so long titles don't run under it */
+.article-title { padding-right: 24px; }
 .article-item:hover { background: #1e1e1e; }
 .article-item.unread .article-title { font-weight: 700; }
 .article-item.kb-focused { background: #1a2233; border-left-color: #5a9cf8; outline: none; }
