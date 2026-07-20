@@ -158,6 +158,39 @@ a { color: #7aabf7; }
   .article-item.layout-photo .article-layout { max-width: none; }
 }
 
+/* ── PHOTO GRID ON WIDE SCREENS ──
+   The list becomes a wrapping flex container. Only photo items participate in
+   the wrap; list/compact items and the loading sentinel are forced to full-width
+   rows, so mixed views (All Items, folders) stay readable. */
+@media (min-width: 900px) {
+  #article-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  /* Everything defaults to a full-width row */
+  #article-list > * { flex: 1 1 100%; }
+
+  /* Photo cards wrap into as many columns as fit (~2–3 typically) */
+  #article-list > .article-item.layout-photo {
+    flex: 1 1 360px;
+    max-width: 620px;      /* stops a lone card from stretching across the page */
+    border: 1px solid #242424;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .article-item.layout-photo .article-layout { max-width: none; }
+
+  /* Non-photo items keep the original edge-to-edge row treatment */
+  #article-list > .article-item.layout-list,
+  #article-list > .article-item.layout-compact {
+    border-radius: 0;
+  }
+}
+
 .article-body { margin-top: 8px; }
 .article-body-inner { font-size: 13px; line-height: 1.7; color: #b0b0b0; padding: 10px 12px; background: #141414; border: 1px solid #2a2a2a; border-radius: 6px; }
 .article-body-inner img { max-width: 100%; max-height: 20em; height: auto; border-radius: 4px; display: block; margin: 8px 0; }
