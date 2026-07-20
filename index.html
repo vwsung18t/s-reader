@@ -136,6 +136,15 @@
       <select id="fi-folder"><option value="">— No folder —</option></select>
     </div>
     <div class="field">
+      <label>Layout</label>
+      <select id="fi-layout">
+        <option value="list">List — image on the left</option>
+        <option value="photo">Photo — large image on top</option>
+        <option value="compact">Compact — text only</option>
+      </select>
+      <div class="hint">Choose <strong>Photo</strong> for image-heavy feeds, <strong>Compact</strong> for high-volume text feeds.</div>
+    </div>
+    <div class="field">
       <label>Feed-specific AI filter rule <span style="font-weight:400;color:#bbb;text-transform:none">(optional)</span></label>
       <textarea id="fi-filter" placeholder="e.g. Skip sponsored posts and press releases."></textarea>
       <div class="hint">Overrides the global filter for this feed only.</div>

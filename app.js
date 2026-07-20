@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -628,7 +628,13 @@ function appendBatch() {
 
 function createArticleEl(a) {
   const el = document.createElement('div');
-  el.className = 'article-item' + (!S.read.has(a.id)?' unread':'') + (S.decisions[a.id]?.keep===false?' ai-filtered':'') + (a.image?' has-thumb':'');
+  // Layout is per-FEED, applied per-ARTICLE so mixed views (All Items, folders)
+  // still render each item using its own feed's layout.
+  const layout = S.feeds.find(f => f.id === a.feedId)?.layout || 'list';
+  el.className = 'article-item layout-' + layout
+    + (!S.read.has(a.id)?' unread':'')
+    + (S.decisions[a.id]?.keep===false?' ai-filtered':'')
+    + (a.image?' has-thumb':'');
   el.dataset.id = a.id;
   el.innerHTML = articleHTML(a);
   return el;
@@ -798,6 +804,7 @@ function openAddFeed() {
   document.getElementById('fi-url').value = '';
   document.getElementById('fi-name').value = '';
   document.getElementById('fi-filter').value = '';
+  document.getElementById('fi-layout').value = 'list';
   populateFolderDropdown(S.currentFeed.startsWith('folder:') ? S.currentFeed.slice(7) : '');
   openOverlay('overlay-feed');
   setTimeout(() => document.getElementById('fi-url').focus(), 60);
@@ -810,6 +817,7 @@ function openEditFeed(feedId) {
   document.getElementById('fi-url').value    = feed.url;
   document.getElementById('fi-name').value   = feed.name||'';
   document.getElementById('fi-filter').value = feed.filterRule||'';
+  document.getElementById('fi-layout').value = feed.layout || 'list';
   populateFolderDropdown(feed.folderId||'');
   openOverlay('overlay-feed');
 }
@@ -819,12 +827,13 @@ async function saveFeed() {
   const name       = document.getElementById('fi-name').value.trim()||null;
   const filterRule = document.getElementById('fi-filter').value.trim()||null;
   const folderId   = document.getElementById('fi-folder').value||null;
+  const layout     = document.getElementById('fi-layout').value || 'list';
   if (S.editingFeedId) {
     const feed = S.feeds.find(f => f.id===S.editingFeedId);
-    if (feed) Object.assign(feed, { url, name, filterRule, folderId });
+    if (feed) Object.assign(feed, { url, name, filterRule, folderId, layout });
     await saveFeeds(); closeOverlay('overlay-feed'); renderSidebar(); renderArticles();
   } else {
-    const feed = { id:'f'+Date.now(), url, name, filterRule, folderId };
+    const feed = { id:'f'+Date.now(), url, name, filterRule, folderId, layout };
     S.feeds.push(feed); await saveFeeds(); closeOverlay('overlay-feed');
     setRefreshBusy(true); await fetchAllFeeds([feed]); setRefreshBusy(false);
     renderSidebar(); renderArticles(); toast('Feed added!');

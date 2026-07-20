@@ -128,6 +128,27 @@ a { color: #7aabf7; }
 .tag-filtered { background: #2a1010; color: #c06060; cursor: help; }
 .tag-pending  { background: #1e1a08; color: #b08830; }
 
+/* ── PER-FEED LAYOUTS ── */
+
+/* Photo — large image on top, for image-heavy feeds */
+.article-item.layout-photo .article-layout { flex-direction: column; gap: 10px; }
+.article-item.layout-photo .article-thumb {
+  width: 100%; height: auto; max-height: 460px;
+  aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px;
+}
+.article-item.layout-photo .article-title-link { font-size: 18px; }
+
+/* Compact — text only, for high-volume feeds */
+.article-item.layout-compact { padding: 9px 16px; }
+.article-item.layout-compact .article-thumb { display: none; }
+.article-item.layout-compact .article-body  { display: none; }
+.article-item.layout-compact .article-title-link { font-size: 14px; }
+
+@media (max-width: 700px) {
+  /* On narrow screens the list layout already stacks, so match photo sizing */
+  .article-item.layout-photo .article-thumb { max-height: 300px; }
+}
+
 .article-body { margin-top: 8px; }
 .article-body-inner { font-size: 13px; line-height: 1.7; color: #b0b0b0; padding: 10px 12px; background: #141414; border: 1px solid #2a2a2a; border-radius: 6px; }
 .article-body-inner img { max-width: 100%; max-height: 20em; height: auto; border-radius: 4px; display: block; margin: 8px 0; }
