@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.12.0';
+const APP_VERSION = '1.13.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -19,6 +19,17 @@ const S = {
 
 const collapsed = new Set(JSON.parse(localStorage.getItem('rss.collapsed') || '[]'));
 const saveCollapsed = () => localStorage.setItem('rss.collapsed', JSON.stringify([...collapsed]));
+
+// Layout used for MIXED views (All Items, folders). Single feeds use their own layout.
+let S_viewLayout = localStorage.getItem('rss.viewLayout') || 'list';
+function setViewLayout(v) {
+  S_viewLayout = v;
+  localStorage.setItem('rss.viewLayout', v);
+  renderArticles();
+}
+function isSingleFeedView() {
+  return S.currentFeed !== 'all' && !S.currentFeed.startsWith('folder:');
+}
 
 let centralAuth, centralDb, userDb;
 
@@ -308,6 +319,8 @@ async function loadFromFirebase() {
   S.feeds     = data.feeds     ? Object.values(data.feeds)     : [];
   S.read      = data.read      ? new Set(Object.keys(data.read)) : new Set();
   S.decisions = data.decisions || {};
+  const vl = document.getElementById('view-layout');
+  if (vl) vl.value = S_viewLayout;
   renderSidebar();
   if (S.feeds.length > 0) {
     renderArticles();
@@ -628,9 +641,15 @@ function appendBatch() {
 
 function createArticleEl(a) {
   const el = document.createElement('div');
-  // Layout is per-FEED, applied per-ARTICLE so mixed views (All Items, folders)
-  // still render each item using its own feed's layout.
-  const layout = S.feeds.find(f => f.id === a.feedId)?.layout || 'list';
+  // Single feed → use that feed's own layout.
+  // Mixed view (All Items / folder) → use the uniform view layout the user picked,
+  //   so interleaved feeds don't clash. 'grid' maps to the photo card layout.
+  let layout;
+  if (isSingleFeedView()) {
+    layout = S.feeds.find(f => f.id === a.feedId)?.layout || 'list';
+  } else {
+    layout = S_viewLayout === 'grid' ? 'photo' : 'list';
+  }
   el.className = 'article-item layout-' + layout
     + (!S.read.has(a.id)?' unread':'')
     + (S.decisions[a.id]?.keep===false?' ai-filtered':'')
@@ -887,6 +906,9 @@ function selectFeed(feedId) {
   if (feedId.startsWith('folder:'))  name = S.folders.find(f=>f.id===feedId.slice(7))?.name||'Folder';
   else if (feedId!=='all')           name = S.feeds.find(f=>f.id===feedId)?.name||'Feed';
   document.getElementById('current-feed-name').textContent = name;
+  // The view-layout picker only applies to mixed views, so hide it on a single feed.
+  const vl = document.getElementById('view-layout');
+  if (vl) { vl.style.display = isSingleFeedView() ? 'none' : ''; vl.value = S_viewLayout; }
   renderSidebar(); renderArticles();
   if (window.innerWidth <= 700) closeSidebar();
 }

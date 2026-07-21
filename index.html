@@ -104,6 +104,10 @@
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
       </select>
+      <select id="view-layout" class="sort-select" title="Layout for mixed views" onchange="setViewLayout(this.value); this.blur()">
+        <option value="list">List</option>
+        <option value="grid">Grid</option>
+      </select>
       <label class="chk-label"><input type="checkbox" id="chk-show-filtered" onchange="renderArticles()"> Show filtered</label>
       <label class="chk-label"><input type="checkbox" id="chk-hide-read" onchange="renderArticles()"> Hide read</label>
       <button class="btn" onclick="markAllRead()">✓ Mark all read</button>
