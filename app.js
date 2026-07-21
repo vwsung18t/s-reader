@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.13.0';
+const APP_VERSION = '1.14.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -601,19 +601,32 @@ function visibleArticles() {
   return list;
 }
 
+// The layout used for the CURRENT view: a single feed uses its own layout,
+// a mixed view (All Items / folder) uses the chosen view layout.
+function effectiveViewLayout() {
+  if (isSingleFeedView()) {
+    return S.feeds.find(f => f.id === S.currentFeed)?.layout || 'list';
+  }
+  return S_viewLayout === 'grid' ? 'photo' : 'list';
+}
+
 function renderArticles() {
   if (S.scrollObserver) { S.scrollObserver.disconnect(); S.scrollObserver = null; }
   S.currentArticles = visibleArticles();
   S.displayedCount  = 0; S.focusedIndex = -1;
   const container = document.getElementById('article-list');
   if (S.currentArticles.length===0 && S.feeds.length===0) {
+    container.dataset.mode = 'list';
     container.innerHTML = `<div class="empty-state"><h3>No feeds yet</h3><p>Add a feed to get started.</p><button class="btn primary" onclick="openAddFeed()">+ Add Feed</button></div>`;
     return;
   }
   if (S.currentArticles.length===0) {
+    container.dataset.mode = 'list';
     container.innerHTML = `<div class="empty-state"><h3>Nothing to show</h3><p>Try refreshing or adjusting the filter options.</p></div>`;
     return;
   }
+  // Grid/masonry when the effective layout is photo; rows otherwise.
+  container.dataset.mode = effectiveViewLayout() === 'photo' ? 'grid' : 'list';
   container.innerHTML = '';
   appendBatch();
 }

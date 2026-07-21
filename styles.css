@@ -137,22 +137,15 @@ a { color: #7aabf7; }
 .tag-filtered { background: #2a1010; color: #c06060; cursor: help; }
 .tag-pending  { background: #1e1a08; color: #b08830; }
 
-/* ── PER-FEED LAYOUTS ── */
+/* ── PER-FEED LAYOUTS ──
+   Content styling per article. The CONTAINER'S data-mode (set in JS) decides
+   whether items flow as rows (list) or as cards in a grid/masonry. */
 
-/* Photo — large image on top, for image-heavy feeds.
-   Width is capped rather than height: an earlier max-height fought the
-   aspect-ratio on wide screens and cropped images into a squat band. */
-.article-item.layout-photo .article-layout {
-  flex-direction: column;
-  gap: 10px;
-  max-width: 760px;   /* keeps the whole card in a readable column */
-}
+/* Photo — large image on top, for image-heavy feeds. */
+.article-item.layout-photo .article-layout { flex-direction: column; gap: 10px; }
 .article-item.layout-photo .article-thumb {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  border-radius: 8px;
+  width: 100%; height: auto;
+  aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px;
 }
 .article-item.layout-photo .article-title-link { font-size: 18px; }
 
@@ -162,42 +155,38 @@ a { color: #7aabf7; }
 .article-item.layout-compact .article-body  { display: none; }
 .article-item.layout-compact .article-title-link { font-size: 14px; }
 
-@media (max-width: 700px) {
-  /* Narrow screens: let the card use the full width; aspect-ratio still governs height */
-  .article-item.layout-photo .article-layout { max-width: none; }
+/* Cap the reading column when a photo feed is shown as full-width rows
+   (single-feed photo view on wide screens), so the image isn't enormous. */
+#article-list[data-mode="list"] .article-item.layout-photo .article-layout { max-width: 760px; }
+
+/* ── GRID / MASONRY MODE ──
+   Container becomes a grid. "Lanes" are the columns; rows use CSS masonry
+   where supported (currently Safari Technology Preview) and fall back to a
+   plain aligned grid everywhere else. */
+#article-list[data-mode="grid"] {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-items: start;   /* natural card heights, no stretching */
 }
 
-/* ── PHOTO GRID ON WIDE SCREENS ──
-   The list becomes a wrapping flex container. Only photo items participate in
-   the wrap; list/compact items and the loading sentinel are forced to full-width
-   rows, so mixed views (All Items, folders) stay readable. */
-@media (min-width: 900px) {
-  #article-list {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    gap: 12px;
-    padding: 12px;
-  }
+/* Masonry packing when the browser supports it */
+@supports (grid-template-rows: masonry) {
+  #article-list[data-mode="grid"] { grid-template-rows: masonry; }
+}
 
-  /* Everything defaults to a full-width row */
-  #article-list > * { flex: 1 1 100%; }
+/* Cards in grid mode get a full border instead of the row separator */
+#article-list[data-mode="grid"] > .article-item {
+  border: 1px solid #242424;
+  border-radius: 10px;
+  padding: 12px;
+}
 
-  /* Photo cards wrap into as many columns as fit (~2–3 typically) */
-  #article-list > .article-item.layout-photo {
-    flex: 1 1 360px;
-    max-width: 620px;      /* stops a lone card from stretching across the page */
-    border: 1px solid #242424;
-    border-radius: 10px;
-    padding: 12px;
-  }
-  .article-item.layout-photo .article-layout { max-width: none; }
-
-  /* Non-photo items keep the original edge-to-edge row treatment */
-  #article-list > .article-item.layout-list,
-  #article-list > .article-item.layout-compact {
-    border-radius: 0;
-  }
+/* Loading sentinel and end marker span all lanes */
+#article-list[data-mode="grid"] > #scroll-sentinel,
+#article-list[data-mode="grid"] > .list-end {
+  grid-column: 1 / -1;
 }
 
 .article-body { margin-top: 8px; }
