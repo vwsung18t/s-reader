@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.14.0';
+const APP_VERSION = '1.15.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -299,16 +299,15 @@ async function signOut() { await centralAuth.signOut(); toast('Signed out'); }
 function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
 // ── FIREBASE DATA ─────────────────────────────────────────────
-const AUTO_REFRESH_MS = 15 * 60 * 1000;
 let autoRefreshTimer = null;
 
+// Background auto-refresh is intentionally disabled: fetching replaces the
+// article data while the user may be mid-read, which is disruptive. New content
+// now loads only on an explicit action — the ↻ Refresh button, or re-opening a
+// feed / All Items via the Refresh button. Kept as a no-op so existing call
+// sites don't need changing.
 function startAutoRefresh() {
-  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-  autoRefreshTimer = setInterval(async () => {
-    if (!S.user || !S.feeds.length) return;
-    await fetchAllFeeds(S.feeds);
-    renderSidebar(); // update unread counts only — don't disrupt reading
-  }, AUTO_REFRESH_MS);
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
 }
 
 async function loadFromFirebase() {
