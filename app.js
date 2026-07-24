@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.16.0';
 const PAGE_SIZE = 20;
 
 // Your own Cloudflare Worker proxy (see cloudflare-worker.js for setup).
@@ -299,15 +299,22 @@ async function signOut() { await centralAuth.signOut(); toast('Signed out'); }
 function toggleUserMenu() { document.getElementById('user-menu').classList.toggle('hidden'); }
 
 // ── FIREBASE DATA ─────────────────────────────────────────────
+const AUTO_REFRESH_MS = 15 * 60 * 1000;
 let autoRefreshTimer = null;
 
-// Background auto-refresh is intentionally disabled: fetching replaces the
-// article data while the user may be mid-read, which is disruptive. New content
-// now loads only on an explicit action — the ↻ Refresh button, or re-opening a
-// feed / All Items via the Refresh button. Kept as a no-op so existing call
-// sites don't need changing.
+// Background refresh updates the UNREAD COUNTS only. It fetches fresh data and
+// redraws the sidebar badges, but never calls renderArticles — so the article
+// list you're reading stays frozen. The newly-fetched items appear only when you
+// explicitly navigate (click All Items / a feed) or hit Refresh, which is when
+// renderArticles rebuilds the list from the latest data.
 function startAutoRefresh() {
-  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(async () => {
+    if (!S.user || !S.feeds.length) return;
+    if (document.querySelector('.overlay.open')) return; // don't fetch mid-dialog
+    await fetchAllFeeds(S.feeds, true); // silent: updates S.articles (data + counts source)
+    renderSidebar();                    // redraw count badges ONLY — not the article list
+  }, AUTO_REFRESH_MS);
 }
 
 async function loadFromFirebase() {
@@ -398,7 +405,7 @@ const PROXIES = [
   },
 ];
 
-async function fetchAllFeeds(feeds) {
+async function fetchAllFeeds(feeds, silent = false) {
   const CONCURRENCY = 4;
   const failed = [];
   for (let i = 0; i < feeds.length; i += CONCURRENCY) {
@@ -408,7 +415,7 @@ async function fetchAllFeeds(feeds) {
   }
   if (failed.length) {
     console.warn('Feeds that failed to load: ' + failed.map(f => f.name || f.url).join(', '));
-    toast(`⚠ ${failed.length} of ${feeds.length} feed${feeds.length!==1?'s':''} failed to load (see console)`, 5000);
+    if (!silent) toast(`⚠ ${failed.length} of ${feeds.length} feed${feeds.length!==1?'s':''} failed to load (see console)`, 5000);
   }
   return failed;
 }
@@ -1000,6 +1007,8 @@ function sanitize(html) {
   if (tmp.children.length===0 && html.includes('&lt;')) { const dec=document.createElement('textarea'); dec.innerHTML=html; tmp.innerHTML=dec.value; }
   tmp.querySelectorAll('script,iframe,object,embed,form').forEach(el=>el.remove());
   tmp.querySelectorAll('*').forEach(el=>{[...el.attributes].forEach(attr=>{if(/^on/i.test(attr.name)||(attr.name==='href'&&/^javascript:/i.test(attr.value)))el.removeAttribute(attr.name);});});
+  // Force every link in the article body to open in a new tab.
+  tmp.querySelectorAll('a[href]').forEach(a=>{ a.setAttribute('target','_blank'); a.setAttribute('rel','noopener noreferrer'); });
   return tmp.innerHTML;
 }
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
